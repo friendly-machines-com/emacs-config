@@ -9,16 +9,25 @@
         "--expose=/usr/bin/env"
         (concat "--share=" (expand-file-name "~/.claude"))
         (concat "--share=" (expand-file-name "~/.claude.json"))
-        (concat "--share=" (expand-file-name "~/.gemini"))
+        ;(concat "--share=" (expand-file-name "~/.gemini"))
         (concat "--share=" (expand-file-name "~/.codex"))
+        (concat "--share=" (expand-file-name "~/src/loki")) ; FIXME
         "--share=/var/log/guix"
         "--share=/var/guix"
-        "--share=/tmp") ; otherwise I don't see the failed builds (--keep-failed).
+        "--share=/tmp" ; otherwise I don't see the failed builds (--keep-failed).
+        "--preserve=_KEY$" ; access keys
+        "--preserve=_TOKEN$" ; access keys
+        "--preserve=_PAT$" ; access keys
+        "claude-agent-acp"
+        "codex-acp"
+        "python" ; for loki harness
+        "ripgrep") ; LLMs often use that
   "Extra args passed to `guix shell` when wrapping commands.")
 
 (defun my/workspace-root ()
   "Workspace is the nearest parent containing manifest.scm."
-  (locate-dominating-file (expand-file-name default-directory) "manifest.scm"))
+  (locate-dominating-file (expand-file-name default-directory)
+                          "manifest.scm"))
 
 (defun my/manifest-path ()
   "Absolute path to manifest.scm for current workspace, or nil."
@@ -128,6 +137,13 @@ Refuse to run uncontainerized when the workspace is not authorized."
       (apply orig args)))
   (advice-remove 'agent-shell--make-acp-client #'my/agent-shell--wrap-runner)
   (advice-add 'agent-shell--make-acp-client :around #'my/agent-shell--wrap-runner))
+
+
+;; TODO: apparently we need to do everything that buffer-env does again here:
+;;  flycheck-rust
+;;  rust-analyzer
+;;  ...
+;; Project detection (F9 otherwise says "Select project"); then works if you select no project; not sure;  I think it works but it's refreshed in time or something.
 
 (provide 'guix-workspace)
 ;;; guix-workspace.el ends here
