@@ -88,18 +88,30 @@ Requires loki-acp adapter for ACP integration."))
   (agent-shell--dwim :config (agent-shell-loki-make-agent-config)
                      :new-shell t))
 
-(cl-defun agent-shell-loki-make-client (&key buffer)
-  "Create a Loki client using BUFFER as context.
+(require 'auth-source)
+;(require 'auth-source-pass)  ;; if using pass/passage
 
-Loki uses OAuth login via the `/login' command, so no API key
-environment variables are required by default."
+(defun my/loki-process-environment ()
+  (delq nil
+        (mapcar
+         (lambda (var)
+           (when-let ((val (auth-source-pick-first-password :host var)))
+             (format "%s=%s" var val)))
+         '("OPENAI_API_KEY"
+           "ANTHROPIC_API_KEY"
+           "GROQ_API_KEY"
+           "OPENCODE_API_KEY"
+           "ZHIPU_API_KEY"))))
+
+(cl-defun agent-shell-loki-make-client (&key buffer)
+  "Create a Loki client using BUFFER as context."
   (unless buffer
     (error "Missing required argument: :buffer"))
   (when (and (boundp 'agent-shell-loki-command) agent-shell-loki-command)
     (user-error "Please migrate to use agent-shell-loki-acp-command and eval (setq agent-shell-loki-command nil)"))
   (agent-shell--make-acp-client :command (car agent-shell-loki-acp-command)
                                 :command-params (cdr agent-shell-loki-acp-command)
-                                :environment-variables agent-shell-loki-environment
+                                :environment-variables (append (my/loki-process-environment) agent-shell-loki-environment)
                                 :context-buffer buffer))
 
 (defun agent-shell-loki--welcome-message (config)
