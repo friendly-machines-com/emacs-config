@@ -95,6 +95,13 @@ be non-space, so \"$5 and $10\" never matches."
   "Whether enabling this mode also enables `xenops-mode' in the buffer."
   :type 'boolean)
 
+(defvar agent-shell-xenops-math--claim-id 0
+  "Last issued claim identity, stored as the
+`agent-shell-xenops-math-claimed' property value.  Identities are
+unique per claim so that ADJACENT claims form distinct property
+intervals -- a plain t would merge them (\(a\)\(b\) would sweep
+as one span and the second element could never be repaired).")
+
 (defvar-local agent-shell-xenops-math--xenops-by-us nil
   "Whether this mode itself turned on `xenops-mode' in this buffer.
 Deactivation turns xenops off only when this is non-nil, so a
@@ -122,7 +129,7 @@ user-enabled xenops-mode survives the mode being toggled off.")
              (not (bound-and-true-p xenops-mode)))
     (setq agent-shell-xenops-math--xenops-by-us t)
     (xenops-mode 1))
-  ;; Both advices are mode-gated in their bodies (no-ops in buffers
+  ;; Advices are mode-gated in their bodies (no-ops in buffers
   ;; without this mode), so installing them globally is safe.
   (unless (advice-member-p 'agent-shell-xenops-math--preamble-around
                             'xenops-math-latex-get-preamble-lines)
@@ -220,13 +227,13 @@ CONTEXT is the alist from `agent-shell-markdown-context'."
     ;;    equation*/align* environments (see Commentary).
     (agent-shell-xenops-math--scan
      (rx "$$" (group (*? anychar)) "$$")
-     code-ranges #'agent-shell-xenops-math--display-rewrite 2)
+     code-ranges #'agent-shell-xenops-math--display-rewrite "$$")
     (agent-shell-xenops-math--scan
      (rx "\\[" (group (*? anychar)) "\\]")
-     code-ranges #'agent-shell-xenops-math--display-rewrite 2)
+     code-ranges #'agent-shell-xenops-math--display-rewrite "\\]")
     (agent-shell-xenops-math--scan
      (rx "\\(" (group (*? anychar)) "\\)")
-     code-ranges nil 2)
+     code-ranges nil "\\)")
     (when agent-shell-xenops-math-inline-dollars
       (agent-shell-xenops-math--scan
        ;; Escape-aware single-dollar math: a `$' inside the content
@@ -236,6 +243,7 @@ CONTEXT is the alist from `agent-shell-markdown-context'."
        (rx "$"
            (group
             (or (not (any "$ \t\n\\"))
+                (seq "\\" (not (any "\n")))
                 (seq (or (not (any "$ \t\n\\"))
                          (seq "\\" (not (any "\n"))))
                      (*? (or (not (any "$\\\n"))
@@ -244,7 +252,14 @@ CONTEXT is the alist from `agent-shell-markdown-context'."
                          (seq "\\" (not (any "\n")))))))
            "$")
        code-ranges
-       (lambda (content _start) (concat "\\(" content "\\)"))))
+       (lambda (content _start) (concat "\\(" content "\\)"))
+       nil
+       (lambda (start end)
+         ;; A dollar adjacent to another dollar belongs to a $$
+         ;; construct: during streaming `$$x$' must stay raw so the
+         ;; complete `$$x$$' claims once its closer arrives.
+         (or (eq (char-before start) ?$)
+             (eq (char-after end) ?$)))))
     ;; 3. Unclosed delimiters hold the streaming frontier.
     (setq pending (agent-shell-xenops-math--pending-watermark code-ranges))
     (and pending (list (cons :watermark pending)))))
@@ -283,28 +298,41 @@ malformed text."
 (defun agent-shell-xenops-math--inside-code-span-p (start)
   "Return non-nil when START sits inside an open inline code span.
 A streaming-order fallback for when the context's code ranges lag
-the claim: an odd number of backticks between line start and START
-means the point is inside an unterminated `code' span, covering
-matches anywhere in the span (e.g. `prefix $x$ suffix'), not only
-ones adjacent to the delimiters.
+the claim.  CommonMark-style: a backtick run of length N opens a
+span that only a run of the same length closes; runs of other
+lengths inside an open span are literal text, and escaped
+backticks are not delimiters.  So ``foo ` bar`` closes fully and
+does not suppress a later $x$.
 
-`count-matches' sets match data, which `--scan' still needs for
-its current match -- wrap it (the unguarded version replaced the
-closing backtick of `a` instead of the $x$ that matched)."
+`re-search-forward' sets match data, which `--scan' still needs
+for its current match -- hence `save-match-data'."
   (save-match-data
-    (cl-oddp (save-excursion
-               (goto-char start)
-               (let (inhibit-field-text-motion)
-                 (count-matches "`" (line-beginning-position) (point)))))))
+    (save-excursion
+      (goto-char start)
+      (let (inhibit-field-text-motion)
+        (let ((bol (line-beginning-position))
+              (active nil))
+          (goto-char bol)
+          (while (re-search-forward "`+" start t)
+            (unless (agent-shell-xenops-math--escaped-p
+                     (match-beginning 0))
+              (let ((len (- (match-end 0) (match-beginning 0))))
+                (cond ((eq active len) (setq active nil))
+                      ((null active) (setq active len))))))
+          active)))))
 
-(defun agent-shell-xenops-math--scan (regexp code-ranges claim-fn &optional closer-len)
+(defun agent-shell-xenops-math--scan (regexp code-ranges claim-fn
+                                         &optional closer-str skip-fn)
   "Scan the narrowed buffer for REGEXP and claim each match.
 CLAIM-FN (content start) returns replacement text; nil keeps it.
-CLOSER-LEN, when non-nil, is the length of the closing delimiter:
-a match whose closer is backslash-escaped (odd backslashes before
-it, e.g. the \\) of an escaped \\\\) is skipped rather than claimed.
+CLOSER-STR, when non-nil, is the closing delimiter: a match whose
+closer is backslash-escaped (odd backslashes before it) is not
+dropped -- the match is extended to the next unescaped closer, as
+the watermark scan does, so a later real closer still claims the
+element.  With no unescaped closer at all the text is left raw.
 Skipped likewise: frozen text, CODE-RANGES, escaped openers, open
-code spans, and anything xenops cannot parse."
+code spans, anything xenops cannot parse, and whatever SKIP-FN
+(called with the match bounds) rejects."
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward regexp nil t)
@@ -316,13 +344,27 @@ code spans, and anything xenops cannot parse."
                     (agent-shell-xenops-math--code-p end code-ranges)
                     (agent-shell-xenops-math--escaped-p start)
                     (agent-shell-xenops-math--inside-code-span-p start)
-                    (and closer-len
-                         (agent-shell-xenops-math--escaped-p (- end closer-len))))
-          (let ((rewrite (and claim-fn (funcall claim-fn content start))))
+                    (and skip-fn (funcall skip-fn start end)))
+          (when (and closer-str
+                     (agent-shell-xenops-math--escaped-p
+                      (- end (length closer-str))))
+            (let* ((cstart (agent-shell-xenops-math--closer-start
+                            (regexp-quote closer-str) end))
+                   (cend (and cstart (+ cstart (length closer-str)))))
+              (if (not cstart)
+                  (setq end nil)   ; no unescaped closer: leave raw
+                ;; Whole match ends after the closer; group 1 ends
+                ;; at the closer's start.
+                (set-match-data
+                 (list start cend (match-beginning 1) cstart))
+                (setq end cend
+                      content (match-string 1)))))
+          (when end
+            (let ((rewrite (and claim-fn (funcall claim-fn content start))))
             (when (agent-shell-xenops-math--parseable-p
                    (string-trim (or rewrite
                                     (buffer-substring-no-properties start end))))
-              (agent-shell-xenops-math--claim rewrite))))))))
+              (agent-shell-xenops-math--claim rewrite)))))))))
 
 (defun agent-shell-xenops-math--parseable-p (text)
   "Return non-nil when xenops can parse TEXT as a math element.
@@ -359,7 +401,9 @@ scans over that text."
         (add-text-properties start end carried))
       (put-text-property start end 'agent-shell-markdown-frozen t)
       (put-text-property start end 'agent-shell-markdown-source source)
-      (put-text-property start end 'agent-shell-xenops-math-claimed t)
+      (put-text-property start end 'agent-shell-xenops-math-claimed
+                         (setq agent-shell-xenops-math--claim-id
+                               (1+ agent-shell-xenops-math--claim-id)))
       (put-text-property start end
                          'rear-nonsticky '(agent-shell-markdown-frozen
                                            agent-shell-markdown-source
@@ -388,7 +432,9 @@ Skipped when the replacement does not parse (see
           (add-text-properties start (point) carried))
         (put-text-property start (point) 'agent-shell-markdown-frozen t)
         (put-text-property start (point) 'agent-shell-markdown-source source)
-        (put-text-property start (point) 'agent-shell-xenops-math-claimed t)
+        (put-text-property start (point) 'agent-shell-xenops-math-claimed
+                           (setq agent-shell-xenops-math--claim-id
+                                 (1+ agent-shell-xenops-math--claim-id)))
         (put-text-property start (point)
                            'rear-nonsticky '(agent-shell-markdown-frozen
                                              agent-shell-markdown-source
@@ -413,6 +459,20 @@ diagnosable; the region is already frozen, and
               ;; Render in place, not below point.
               (let ((xenops-apply-user-point (point-min)))
                 (xenops-math-render element)))))))))
+
+(defun agent-shell-xenops-math--closer-start (closer-regexp from)
+  "Return the start of the first unescaped closer after FROM.
+Escaped closers are content, so the search steps past them.  Nil
+when there is none."
+  (save-excursion
+    (save-match-data
+      (goto-char from)
+      (catch 'found
+        (while (re-search-forward closer-regexp nil t)
+          (if (agent-shell-xenops-math--escaped-p (match-beginning 0))
+              (goto-char (match-end 0))
+            (throw 'found (match-beginning 0))))
+        nil))))
 
 (defun agent-shell-xenops-math--closer-end (closer-regexp from)
   "Return the end position of the first unescaped closer after FROM.
@@ -468,7 +528,13 @@ Only spans carrying `agent-shell-xenops-math-claimed' are touched:
 `agent-shell-markdown-frozen' alone is not enough, since agent-shell
 freezes whole rendered tables (whose cells may contain raw $x$ this
 mode never claimed).  A waiting overlay does not count as an image;
-it is deleted first, otherwise `xenops-math-render' is a no-op."
+it is deleted first, otherwise `xenops-math-render' is a no-op.
+
+After handling a claim, scanning resumes past the END of that
+claim's interval: a claimed element's interior can contain its own
+math-shaped text (\\node {$x$} inside a tikzpicture, \\text{... \\$5}
+inside an equation), which must not be re-matched, re-deleted as a
+\"stale\" overlay, and rendered as a separate element."
   (let ((inhibit-read-only t)
         (n 0))
     (save-excursion
@@ -484,20 +550,28 @@ it is deleted first, otherwise `xenops-math-render' is a no-op."
                         "\\[" "\\(" "$"))
                 nil t)
           (let ((pos (match-beginning 0)))
-            (when (and (get-text-property pos 'agent-shell-xenops-math-claimed)
-                       (not (seq-some (lambda (ov)
-                                        (and (overlay-get ov 'display)
-                                             (<= (overlay-start ov) pos)
-                                             (> (overlay-end ov) pos)))
-                                      (overlays-at pos))))
-              ;; Drop any stale waiting overlay first: it makes
-              ;; `xenops-math-render' a no-op.
-              (dolist (ov (overlays-at pos))
-                (when (eq (overlay-get ov 'xenops-overlay-type)
-                          'xenops-math-waiting)
-                  (delete-overlay ov)))
-              (agent-shell-xenops-math--render pos)
-              (setq n (1+ n)))))))
+            (if (not (get-text-property pos 'agent-shell-xenops-math-claimed))
+                nil                     ; not ours: keep scanning
+              (let ((claim-end
+                     (or (next-single-property-change
+                          pos 'agent-shell-xenops-math-claimed
+                          nil (point-max))
+                         (point-max))))
+                (unless (seq-some (lambda (ov)
+                                    (and (overlay-get ov 'display)
+                                         (<= (overlay-start ov) pos)
+                                         (> (overlay-end ov) pos)))
+                                  (overlays-at pos))
+                  ;; Drop any stale waiting overlay first: it makes
+                  ;; `xenops-math-render' a no-op.
+                  (dolist (ov (overlays-at pos))
+                    (when (eq (overlay-get ov 'xenops-overlay-type)
+                              'xenops-math-waiting)
+                      (delete-overlay ov)))
+                  (agent-shell-xenops-math--render pos)
+                  (setq n (1+ n)))
+                ;; Resume past the whole claim either way.
+                (goto-char claim-end)))))))
     n))
 
 (provide 'agent-shell-xenops-math)
