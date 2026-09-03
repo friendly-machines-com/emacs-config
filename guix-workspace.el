@@ -13,12 +13,14 @@
         (concat "--share=" (expand-file-name "~/.codex"))
         (concat "--share=" (expand-file-name "~/.config/loki")) ; also contains credentials, but those will be covered by loki.
         (concat "--share=" (expand-file-name "~/src/loki")) ; FIXME
+        ;"--share=/run/user/1000/emacs" ; LLM drives emacs (since emacs runs on the HOST, not in the guest, this is a very bad idea)
         "--share=/var/log/guix"
         "--share=/var/guix"
         "--share=/tmp" ; otherwise I don't see the failed builds (--keep-failed).
         "--preserve=_KEY$" ; access keys
         "--preserve=_TOKEN$" ; access keys
         "--preserve=_PAT$" ; access keys
+        "emacs-minimal" ; LLM drives emacs (via emacsclient)
         "claude-agent-acp"
         "codex-acp"
         "python" ; for loki harness
