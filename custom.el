@@ -3572,6 +3572,8 @@ FILETAGS."
 (add-hook 'git-rebase-mode-hook #'my-git-rebase-setup-toolbar)
                                         ;(my-git-rebase-setup-toolbar)
 
+(load (locate-user-emacs-file "agent-shell-loki.el"))
+
 (use-package agent-shell
   :config
   ;; (setq agent-shell-confirm-tool-execution nil)
