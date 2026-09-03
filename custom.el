@@ -3583,4 +3583,6 @@ FILETAGS."
   ;(setq agent-shell-anthropic-claude-command
   ;      (list "claude-code-acp"))
   (setq agent-shell-preferred-agent-config
-        (agent-shell-anthropic-make-claude-code-config)))
+   (agent-shell-loki-make-agent-config))
+        )
+
