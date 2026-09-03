@@ -3488,7 +3488,7 @@ FILETAGS."
   :custom-face
   (ansi-color-bright-blue ((t (:foreground "#00afff" :background "#00afff"))))
   :config
-  (evil-set-initial-state 'eat-mode 'emacs)
+  ;(evil-set-initial-state 'eat-mode 'emacs) ; does not exist
   (eat-eshell-mode)
   (eat-eshell-visual-command-mode))
 
