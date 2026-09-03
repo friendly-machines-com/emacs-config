@@ -1547,7 +1547,7 @@ argument is given.  Choose a file name based on any document
 (setq elfeed-search-print-entry-function #'elfeed-search-print-entry)
 
 (use-package gptel
-  #:config
+  :config
   (setq gptel-backend
         (gptel-make-openai "llama-cpp"
                            :stream t
