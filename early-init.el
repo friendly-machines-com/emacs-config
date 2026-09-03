@@ -1,4 +1,8 @@
 
+;; Override org.
+(add-to-list 'load-path (expand-file-name "org-mode/lisp" user-emacs-directory))
+;(add-to-list 'load-path "/home/dannym/.config/emacs/org-mode")
+
 (with-eval-after-load 'agent-shell-anthropic
   ;; Prefixes the command that starts the agent, or a shell command that should be run so it is executed inside the container.
   ;; It's extremely dangerous if this isn't set (because of a config error, say), so keep this here and at the beginning.
