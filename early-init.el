@@ -20,8 +20,12 @@
   ;; To prevent the agent running inside the container to access your local file-system altogether and to have it read/modify files inside the container directly, in addition to setting the resolver function, disable the “read/write text file” client capabilities.
   (setq agent-shell-text-file-capabilities nil)
 
-  (setq agent-shell-anthropic-claude-command
-        (list "claude-code-acp")))
+; "please migrate away"
+;  (setq agent-shell-anthropic-claude-command
+;        (list "claude-agent-acp"))
+
+        )
+
 
 (setq debug-on-quit t)
 (profiler-start 'cpu)
