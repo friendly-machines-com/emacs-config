@@ -11,6 +11,7 @@
         (concat "--share=" (expand-file-name "~/.claude.json"))
         ;(concat "--share=" (expand-file-name "~/.gemini"))
         (concat "--share=" (expand-file-name "~/.codex"))
+        (concat "--share=" (expand-file-name "~/.config/loki")) ; also contains credentials, but those will be covered by loki.
         (concat "--share=" (expand-file-name "~/src/loki")) ; FIXME
         "--share=/var/log/guix"
         "--share=/var/guix"
