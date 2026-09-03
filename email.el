@@ -11,9 +11,9 @@
 (setq mail-user-agent #'mu4e-user-agent
       message-mail-user-agent t)
 
-(setq mu4e-get-mail-command "offlineimap"
+(setq mu4e-get-mail-command "~/src/jma-mail/jma-mail/target/release/jma"
       mu4e-maildir (expand-file-name "~/Mail")
-      mu4e-update-interval 180
+      mu4e-update-interval 240
       message-kill-buffer-on-exit t
       mu4e-headers-skip-duplicates t
       mu4e-compose-signature-auto-include nil
@@ -58,26 +58,26 @@
                 (smtpmail-authenticate-always . t)
                 (smtpmail-require-credentials . t)
                 ;(smtpmail-queue-mail  . nil)
-                ;(smtpmail-queue-dir  "/home/dannym/Mail/friendly-machines.com/INBOX/Sent/cur")
+                ;(smtpmail-queue-dir  "/home/dannym/Mail/friendly-machines.com/Sent/cur")
 
-                (mu4e-sent-folder . "/friendly-machines.com/INBOX/Sent")
-                (mu4e-drafts-folder . "/friendly-machines.com/INBOX/Drafts")
-                (mu4e-trash-folder . "/friendly-machines.com/INBOX/Trash")
-                (mu4e-refile-folder . "/friendly-machines.com/INBOX/Archives") ; TODO: Check.
-                (mu4e-get-mail-command . "offlineimap -a dannym@friendly-machines.com")
+                (mu4e-sent-folder . "/friendly-machines.com/Sent")
+                (mu4e-drafts-folder . "/friendly-machines.com/Drafts")
+                (mu4e-trash-folder . "/friendly-machines.com/Trash")
+                (mu4e-refile-folder . "/friendly-machines.com/Archive") ; TODO: Check.
+                (mu4e-get-mail-command . "~/src/jma-mail/jma-mail/target/release/jma sync") ; dannym@friendly-machines.com
 
                 (mu4e-maildir-shortcuts . ( ("/friendly-machines.com/INBOX" . ?i)
-                                            ("/friendly-machines.com/INBOX/Sent" . ?s)
-                                            ("/friendly-machines.com/INBOX/Trash" . ?t)
-                                            ("/friendly-machines.com/INBOX/Archives" . ?a)
-                                            ("/friendly-machines.com/INBOX/Drafts" . ?d)
-                                            ("/friendly-machines.com/INBOX/Hobby/Shellbox" .?s)
-                                            ("/friendly-machines.com/INBOX/Work/Friendly_Machines" .?f)
-                                            ("/friendly-machines.com/INBOX/Work/Guix/Devel" . ?g)
-                                            ("/friendly-machines.com/INBOX/Work/Guix/Patches" . ?h)
-                                            ("/friendly-machines.com/INBOX/Work/Physics" . ?p)
-                                            ("/friendly-machines.com/INBOX/Work/TU_Tieftemperatur" . ?i)
-                                            ("/friendly-machines.com/INBOX/Work/Oxide" . ?x)))))))
+                                            ("/friendly-machines.com/Sent" . ?s)
+                                            ("/friendly-machines.com/Trash" . ?t)
+                                            ("/friendly-machines.com/Archives" . ?a)
+                                            ("/friendly-machines.com/Drafts" . ?d)
+                                            ("/friendly-machines.com/Hobby/Shellbox" .?s)
+                                            ("/friendly-machines.com/Work/Friendly_Machines" .?f)
+                                            ("/friendly-machines.com/Work/Guix/Devel" . ?g)
+                                            ("/friendly-machines.com/Work/Guix/Patches" . ?h)
+                                            ("/friendly-machines.com/Work/Physics" . ?p)
+                                            ("/friendly-machines.com/Work/TU_Tieftemperatur" . ?i)
+                                            ("/friendly-machines.com/Work/Oxide" . ?x)))))))
 
 (setq mu4e-change-filenames-when-moving t)
 
