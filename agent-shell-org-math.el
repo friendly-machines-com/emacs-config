@@ -37,9 +37,11 @@
 ;;  * No parse gate: a fragment that fails to compile shows a fringe
 ;;    "!" and a help-echo with the LaTeX error, and does not disturb
 ;;    its siblings (one latex run batches all uncached fragments).
-;;  * No semaphore/xenops-mode setup: no minor mode is enabled here;
-;;    in particular `org-latex-preview-mode' (the cursor-tracking
-;;    auto machinery, which DOES use org parsing) stays off.
+;;  * Preview batches are serialized because agent-shell may invoke the
+;;    renderer again while a previous Org LaTeX conversion is still running.
+;;    No Org minor mode is enabled here; in particular,
+;;    `org-latex-preview-mode' (the cursor-tracking auto machinery, which DOES
+;;    use Org parsing) stays off.
 ;;
 ;; Claimed forms (frozen, source stashed on
 ;; `agent-shell-markdown-source' for copy-as-markdown, rendered via
@@ -136,10 +138,13 @@ and flushed to `org-latex-preview-place' once at the end, so all
 fresh fragments of a pass share one latex run.")
 
 (defvar-local agent-shell-org-math--recovery-needed nil
-  "Whether a failed Org preview batch left claims needing recovery.
-Set by `agent-shell-org-math--process-finished' and consumed by the
-next renderer pass, so normal streaming passes stay bounded to their
-narrowed region instead of sweeping the whole accumulated buffer.")
+  "Whether a failed Org preview batch left claims needing recovery.")
+
+(defvar-local agent-shell-org-math--pending-entries nil
+  "Marker-based preview entries waiting for the current Org job to finish.")
+
+(defvar-local agent-shell-org-math--drain-timer nil
+  "Timer scheduled to drain `agent-shell-org-math--pending-entries'.")
 
 ;;;###autoload
 (define-minor-mode agent-shell-org-math-mode
@@ -195,6 +200,12 @@ restores the images."
   (remove-hook 'org-latex-preview-process-finish-functions
                #'agent-shell-org-math--process-finished t)
   (setq agent-shell-org-math--recovery-needed nil)
+  (when (timerp agent-shell-org-math--drain-timer)
+    (cancel-timer agent-shell-org-math--drain-timer))
+  (setq agent-shell-org-math--drain-timer nil)
+  (mapc #'agent-shell-org-math--detach-entry
+        agent-shell-org-math--pending-entries)
+  (setq agent-shell-org-math--pending-entries nil)
   (dolist (ov (overlays-in (point-min) (point-max)))
     (when (agent-shell-org-math--our-overlay-p ov)
       (delete-overlay ov))))
@@ -228,6 +239,49 @@ them."
      (setq agent-shell-org-math--recovery-needed t)
      (message "agent-shell-org-math: %S" err)
      nil)))
+
+(defun agent-shell-org-math--detach-entry (entry)
+  "Detach the two markers owned by preview ENTRY."
+  (set-marker (nth 0 entry) nil)
+  (set-marker (nth 1 entry) nil))
+
+(defun agent-shell-org-math--schedule-drain (&optional buffer)
+  "Schedule queued previews in BUFFER after active Org jobs settle."
+  (let ((buffer (or buffer (current-buffer))))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (unless (timerp agent-shell-org-math--drain-timer)
+          (setq agent-shell-org-math--drain-timer
+                (run-at-time 0.05 nil
+                             #'agent-shell-org-math--drain-buffer
+                             buffer)))))))
+
+(defun agent-shell-org-math--drain-buffer (buffer)
+  "Drain queued preview entries belonging to BUFFER."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (setq agent-shell-org-math--drain-timer nil)
+      (when agent-shell-org-math-mode
+        (if (agent-shell-org-math--conversion-running-p)
+            (agent-shell-org-math--schedule-drain buffer)
+          (let ((entries agent-shell-org-math--pending-entries))
+            (setq agent-shell-org-math--pending-entries nil)
+            (when entries
+              (unwind-protect
+                  (agent-shell-org-math--flush entries)
+                (mapc #'agent-shell-org-math--detach-entry entries))))
+          (when agent-shell-org-math--recovery-needed
+            (setq agent-shell-org-math--recovery-needed nil)
+            (agent-shell-org-math-render-missing)))))))
+
+(defun agent-shell-org-math--enqueue (entries)
+  "Queue marker-based ENTRIES and start them when Org is idle."
+  (when entries
+    (setq agent-shell-org-math--pending-entries
+          (nconc agent-shell-org-math--pending-entries entries)))
+  (if (agent-shell-org-math--conversion-running-p)
+      (agent-shell-org-math--schedule-drain)
+    (agent-shell-org-math--drain-buffer (current-buffer))))
 
 (defun agent-shell-org-math-clear-error-markings ()
   "Clear error markings on OUR previews that also show an image.
@@ -342,18 +396,12 @@ CONTEXT is the alist from `agent-shell-markdown-context'."
                   (not (get-text-property end
                                           'agent-shell-markdown-frozen))
                   (eq (char-after (1+ end)) ?$))))))
-    ;; 3. Render every fresh claim of this pass in one latex run.
+    ;; 3. Queue every fresh claim.  Org's preview pipeline is asynchronous;
+    ;; only one uncached batch may run at a time or streaming passes can lose
+    ;; process-filter completion and leave frozen claims without overlays.
     (when agent-shell-org-math--entries
-      (setq agent-shell-org-math--entries
-            (nreverse agent-shell-org-math--entries))
-      (unwind-protect
-          (agent-shell-org-math--flush agent-shell-org-math--entries)
-        ;; Detach every entry's markers -- `nreverse' is destructive,
-        ;; so this must walk the very list that was flushed.
-        (mapc (lambda (e)
-                (set-marker (nth 0 e) nil)
-                (set-marker (nth 1 e) nil))
-              agent-shell-org-math--entries)))
+      (agent-shell-org-math--enqueue
+       (nreverse agent-shell-org-math--entries)))
     ;; 4. Unclosed delimiters hold the streaming frontier.
     (setq pending (agent-shell-org-math--pending-watermark code-ranges))
     (and pending (list (cons :watermark pending)))))
@@ -659,25 +707,22 @@ another buffer cannot own a claim that has no overlay here."
 
 (defun agent-shell-org-math--process-finished (exit-code _process-buffer
                                                          extended-info)
-  "Remember a failed Org preview batch for a later bounded recovery.
-EXIT-CODE and EXTENDED-INFO are supplied by
-`org-latex-preview-process-finish-functions'.  Only a failed batch
-containing one of this mode's overlays marks its originating buffer.
-Org runs this hook before its failure callback deletes those overlays;
-the next agent-shell renderer pass performs the recovery after the
-callback chain has finished."
-  (when (/= exit-code 0)
-    (when-let* ((buffer (plist-get extended-info :org-buffer))
-                ((buffer-live-p buffer)))
-      (with-current-buffer buffer
-        (when (and agent-shell-org-math-mode
+  "Recover failed previews and start the next serialized preview batch."
+  (when-let* ((buffer (plist-get extended-info :org-buffer))
+              ((buffer-live-p buffer)))
+    (with-current-buffer buffer
+      (when agent-shell-org-math-mode
+        (when (and (/= exit-code 0)
                    (seq-some
                     (lambda (fragment)
                       (when-let* ((ov (plist-get fragment :overlay))
                                   ((overlay-buffer ov)))
                         (agent-shell-org-math--our-overlay-p ov)))
                     (plist-get extended-info :fragments)))
-          (setq agent-shell-org-math--recovery-needed t))))))
+          (setq agent-shell-org-math--recovery-needed t))
+        ;; Run after Org's own success/failure callbacks have updated or
+        ;; deleted their overlays and detached the finished process.
+        (agent-shell-org-math--schedule-drain buffer)))))
 
 (defun agent-shell-org-math-render-missing ()
   "Re-render claimed math that shows no image and no error.
@@ -754,15 +799,7 @@ missing overlay is always eligible for recovery."
               ;; ALWAYS advance past this span.
               (setq pos claim-end)))))
       (when entries
-        (setq entries (nreverse entries))
-        (unwind-protect
-            (agent-shell-org-math--flush entries)
-          ;; Detach every entry's markers -- walking the very list
-          ;; that was flushed (`nreverse' is destructive).
-          (mapc (lambda (e)
-                  (set-marker (nth 0 e) nil)
-                  (set-marker (nth 1 e) nil))
-                entries))))
+        (agent-shell-org-math--enqueue (nreverse entries))))
     n))
 
 (provide 'agent-shell-org-math)
