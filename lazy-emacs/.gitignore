@@ -1,0 +1,11 @@
+# User state and generated artifacts, never commit credentials.
+/state/
+/cache/
+/private.el
+/.authinfo.gpg
+/gui-settings.el
+/user-lisp/**/*autoloads.el
+**/*.elc
+**/*.eln
+**/*~
+**/#*#
