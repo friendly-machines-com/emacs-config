@@ -1,0 +1,30 @@
+;;; lc-dap-gdb.el --- Native GDB 14+ DAP providers -*- lexical-binding: t; -*-
+;; Based on the user's dap-gdb adapter (Ivan Yonchovski / Danny Milosavljevic), GPL-3.0-or-later.
+(require 'dap-mode)
+(require 'dap-utils)
+(defgroup lc-dap-gdb nil "Native GDB DAP." :group 'lazy-config)
+(defcustom dap-gdb-debug-program '("gdb" "-i" "dap") "Native GDB DAP command (14+)."
+  :type '(repeat string) :group 'lc-dap-gdb)
+(defun lc-dap-gdb-launch (configuration)
+  (let ((configuration (copy-sequence configuration)))
+    (dolist (pair `((:dap-server-path . ,dap-gdb-debug-program) (:type . "gdb")
+                    (:request . "launch") (:name . "GDB Debug") (:cwd . ,default-directory)))
+      (unless (plist-get configuration (car pair))
+        (setq configuration (plist-put configuration (car pair) (cdr pair)))))
+    (unless (plist-get configuration :program)
+      (setq configuration (plist-put configuration :program (read-file-name "Executable to debug: " nil nil t))))
+    configuration))
+(defun lc-dap-gdb-attach (configuration)
+  (let ((configuration (copy-sequence configuration)))
+    (setq configuration (plist-put configuration :dap-server-path dap-gdb-debug-program)
+          configuration (plist-put configuration :request "attach"))
+    (unless (plist-get configuration :target)
+      (setq configuration (plist-put configuration :target (read-string "GDBserver host:port: "))))
+    configuration))
+(dap-register-debug-provider "gdb" #'lc-dap-gdb-launch)
+(dap-register-debug-provider "gdbserver" #'lc-dap-gdb-attach)
+(dap-register-debug-template "GDB Run Configuration"
+                             '(:type "gdb" :request "launch" :name "GDB::Run" :program nil :cwd nil))
+(dap-register-debug-template "GDBServer Connect Configuration"
+                             '(:type "gdbserver" :request "attach" :name "GDBServer::Connect" :target nil))
+(provide 'lc-dap-gdb)
