@@ -1,5 +1,28 @@
 ;;; early-init.el --- Early PGTK daemon policy -*- lexical-binding: t; -*-
 
+;;; Mitigate TERRIBLE autoload storm on startup
+
+;; Less gc on startup.
+;; Maximize GC threshold during startup
+(setq gc-cons-threshold most-positive-fixnum
+      gc-cons-percentage 0.6)
+
+;; Reset to a sensible value (e.g., 16MB) after startup finishes
+(add-hook 'emacs-startup-hook
+  (lambda ()
+    (setq gc-cons-threshold (* 16 1024 1024)
+          gc-cons-percentage 0.1)))
+
+(defvar default-file-name-handler-alist file-name-handler-alist)
+(setq file-name-handler-alist nil)
+
+(add-hook 'emacs-startup-hook
+  (lambda ()
+    (setq file-name-handler-alist default-file-name-handler-alist)))
+
+;;; End mitigate TERRIBLE autoload storm on startup
+
+
 (defvar lc-config-root (file-name-directory (or load-file-name buffer-file-name)))
 (defvar lc-real-home (file-name-as-directory (expand-file-name "~")))
 (defvar lc-global-environment (copy-sequence process-environment))
