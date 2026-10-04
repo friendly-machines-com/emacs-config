@@ -1,0 +1,36 @@
+;;; lc-news.el --- Gnus news GUI and mandatory NNTP encryption -*- lexical-binding: t; -*-
+(require 'lc-core)
+(require 'lc-ui)
+(require 'gnus)
+(defvar nntp-address)
+(defvar nntp-port-number)
+(defun lc-nntp-starttls (buffer)
+  "NNTP with required STARTTLS: fail rather than downgrade to plaintext."
+  (require 'network-stream)
+  (open-network-stream
+   "nntpd" buffer nntp-address nntp-port-number :type 'starttls
+   :end-of-command "^\\([2345]\\|[.]\\).*\n"
+   :capability-command "CAPABILITIES\r\n" :success "^3"
+   :starttls-function (lambda (capabilities)
+                       (and capabilities (string-match-p "STARTTLS" capabilities) "STARTTLS\r\n"))))
+(defun lc-news-group-setup ()
+  (gnus-topic-mode 1) (hl-line-mode 1)
+  (keymap-local-set "n" #'gnus-group-next-group)
+  (keymap-local-set "p" #'gnus-group-prev-group)
+  (keymap-local-set "M-n" #'gnus-topic-goto-next-topic)
+  (keymap-local-set "M-p" #'gnus-topic-goto-previous-topic))
+(defun lc-news-summary-setup ()
+  (hl-line-mode 1)
+  (dolist (entry '(("<delete>" . gnus-summary-delete-article)
+                   ("n" . gnus-summary-next-article) ("p" . gnus-summary-prev-article)
+                   ("N" . gnus-summary-next-unread-article) ("P" . gnus-summary-prev-unread-article)
+                   ("M-n" . gnus-summary-next-thread) ("M-p" . gnus-summary-prev-thread)
+                   ("C-M-n" . gnus-summary-next-group) ("C-M-p" . gnus-summary-prev-group)
+                   ("C-M-^" . gnus-summary-refer-thread)))
+    (keymap-local-set (car entry) (cdr entry))))
+(add-hook 'gnus-group-mode-hook #'lc-news-group-setup)
+(add-hook 'gnus-summary-mode-hook #'lc-news-summary-setup)
+(add-hook 'gnus-browse-mode-hook #'hl-line-mode)
+(add-hook 'gnus-select-group-hook #'gnus-group-set-timestamp)
+(require 'lc-mathml)
+(provide 'lc-news)
