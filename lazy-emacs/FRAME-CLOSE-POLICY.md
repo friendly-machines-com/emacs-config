@@ -1,6 +1,6 @@
-# Proposed frame-local save/close policy
+# Approved and implemented frame-local save/close policy
 
-The user wants closing a GUI frame to save **that frame's** buffers, not every modified buffer in the daemon, and does not want a headless daemon left full of unsaved work. This design is a proposal awaiting confirmation of the last-frame rule; no replacement close handler has been installed.
+The user wants closing a GUI frame to save **that frame's** buffers, not every modified buffer in the daemon, and does not want a headless daemon left full of unsaved work. The user approved this design. `lisp/lc-frames.el` implements it; actual PGTK daemon/frame tests cover disjoint and hidden files, save cancellation, last-frame orphan review and pending questions, including subsequent emacsclient recovery.
 
 ## API/source findings
 
@@ -14,7 +14,7 @@ Verified with the Guix PGTK 31.1 build and source:
 ## Scope
 
 1. Use the **frame being closed** from the close event/command, not whichever frame happened to be selected at the time.
-2. Record real user buffers displayed/visited in each top-level PGTK frame. Include current windows, tab/window history and recorded recently displayed buffers, so switching tabs does not evade saving. Track before mutation as well as at redisplay and synchronize a final snapshot at close; do not rely solely on redisplay callbacks for rapid buffer switches. Weak/live-buffer bookkeeping avoids retaining killed buffers.
+2. Use the native frame's own `buffer-list` parameter plus current windows, previous/next window buffers and history collected through public frame/window change hooks. This is distinct from `(buffer-list FRAME)`, which appends every other daemon buffer. Synchronize a final snapshot at close; native history covers rapid switches before redisplay. Drop killed buffers when reading the set.
 3. Exclude minibuffers, daemon initial/dummy frames, child/tooltip frames and temporary server frames. Do not treat buffer-list FRAME as ownership.
 4. Save modified file-backed buffers associated with this frame, including buffers currently hidden behind its tabs. Do not save modified buffers belonging only to other open frames.
 5. A buffer displayed in two frames is one shared buffer; saving it from either frame necessarily persists the same edits. There cannot be independent save states for those two views.

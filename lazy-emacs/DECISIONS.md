@@ -1,6 +1,6 @@
 # Migration decisions and remaining questions
 
-This records the user's answers after the static inventory. The inventories describe the **old** configuration; this file and PLAN.md define replacement scope. No replacement init code has been created yet, and original config/state is unchanged.
+This records the user's answers after the static inventory. The inventories describe the **old** configuration. The user subsequently authorized implementation, remaining choices by judgement, topic commits, and the proposed frame-close policy. Implementation is now present; see [current choices and rationale](IMPLEMENTATION.md) and [launch/validation instructions](README.md). Original config/state is unchanged. Earlier questions below are discussion history, not a request blocking implementation.
 
 ## Confirmed
 

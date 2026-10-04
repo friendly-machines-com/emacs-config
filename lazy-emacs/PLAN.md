@@ -1,6 +1,6 @@
 # Lazy PGTK Emacs migration plan (review draft)
 
-Date: 2026-10-03. This directory currently contains planning documents only. The old configuration is unchanged. Do not use this directory as an Emacs init directory yet.
+Planning began 2026-10-03. Implementation is now present; see [launch instructions](README.md), [implementation choices](IMPLEMENTATION.md) and [validation](VALIDATION.md). The original configuration remains unchanged. This plan records the design discussion; current code and those implementation documents supersede unresolved draft alternatives below.
 
 ## Scope and evidence
 
