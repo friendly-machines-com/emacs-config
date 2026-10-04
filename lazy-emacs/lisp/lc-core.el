@@ -2,7 +2,7 @@
 (require 'cl-lib)
 (require 'subr-x)
 (defgroup lazy-config nil "PGTK configuration owned by the user and Guix." :group 'environment)
-(defvar lc-config-root (file-name-directory (directory-file-name user-emacs-directory)))
+(defvar lc-config-root (file-name-as-directory (expand-file-name user-emacs-directory)))
 (defvar lc-real-home (file-name-as-directory (expand-file-name "~")))
 (defvar lc-global-environment (copy-sequence process-environment))
 (defvar lc-global-exec-path (copy-sequence exec-path))
@@ -15,15 +15,23 @@
   (let ((process-environment (copy-sequence lc-global-environment))
         (exec-path (copy-sequence lc-global-exec-path)))
     (apply function args)))
+(defun lc-authinfo-set (symbol value)
+  (set-default symbol value)
+  (when (featurep 'auth-source) (setq auth-sources (list value))))
 (defcustom lc-authinfo-file (lc-home-file ".config/emacs/.authinfo.gpg")
   "Existing encrypted credential file. Copy/move it deliberately at final cutover."
-  :type 'file :group 'lazy-config)
+  :type 'file :set #'lc-authinfo-set :group 'lazy-config)
 (defcustom lc-profile-startup nil "Start the CPU profiler for startup diagnostics."
   :type 'boolean :group 'lazy-config)
+(defvar lc-init-finished nil)
+(defun lc-org-services-set (symbol enabled)
+  (set-default symbol enabled)
+  (when lc-init-finished
+    (if enabled (lc-start-org-services) (lc-stop-org-services))))
 (defcustom lc-org-services-enabled t
   "Start reminders and Org Node/Mem indexing with the daemon.
 Disabling this explicitly disables reminders; it is not a performance default."
-  :type 'boolean :group 'lazy-config)
+  :type 'boolean :set #'lc-org-services-set :group 'lazy-config)
 (defcustom lc-indent-detection t "Detect project indentation in programming buffers."
   :type 'boolean :group 'lazy-config)
 (defun lc-require (feature)
@@ -52,6 +60,7 @@ Disabling this explicitly disables reminders; it is not a performance default."
         org-clock-persist-file (lc-state-file "org-clock-save.el")
         org-node-cache-file (lc-cache-file "org-node-cache.el")
         emms-directory (lc-state-file "emms/")
+        mu4e-mu-home (lc-state-file "mu")
         transient-history-file (lc-state-file "transient-history.el")
         transient-values-file (lc-state-file "transient-values.el")
         transient-levels-file (lc-state-file "transient-levels.el")
@@ -67,6 +76,37 @@ Disabling this explicitly disables reminders; it is not a performance default."
         server-socket-dir (lc-state-file "server"))
   (when (fboundp 'startup-redirect-eln-cache)
     (startup-redirect-eln-cache (lc-cache-file "eln/"))))
+(defvar lc--deferred-custom nil)
+(defun lc-apply-deferred-custom (&rest _)
+  "Apply saved values once to newly defined plain defvars.
+Defcustom setters already handle saved values themselves. Never reassert options
+on every load or overwrite a live customized value."
+  (setq lc--deferred-custom
+        (cl-delete-if
+         (lambda (symbol)
+           (when (default-boundp symbol)
+             (unless (get symbol 'standard-value)
+               (let ((value (or (get symbol 'customized-value) (get symbol 'saved-value))))
+                 (when value (funcall (or (get symbol 'custom-set) #'set-default)
+                                     symbol (eval (car value) t)))))
+             t)) lc--deferred-custom)))
+(defun lc-register-deferred-custom ()
+  "Find saved variables in the GUI file without evaluating that file a second time."
+  (setq lc--deferred-custom nil)
+  (with-temp-buffer
+    (insert-file-contents custom-file) (goto-char (point-min))
+    (condition-case nil
+        (while t
+          (let ((form (read (current-buffer))))
+            (when (eq (car-safe form) 'custom-set-variables)
+              (dolist (entry (cdr form))
+                (let ((symbol (car-safe (cadr entry))))
+                  (when (and (symbolp symbol) (get symbol 'saved-value)
+                             (not (get symbol 'standard-value)))
+                    (push symbol lc--deferred-custom)))))))
+      (end-of-file nil)))
+  (lc-apply-deferred-custom)
+  (add-hook 'after-load-functions #'lc-apply-deferred-custom))
 (defun lc-diagnostics ()
   "Show paths, versions and unresolved Guix dependencies without starting services."
   (interactive)

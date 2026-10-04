@@ -14,6 +14,9 @@
    (cl-remove-if-not
     #'buffer-live-p
     (append (frame-parameter frame 'lc-work-buffers)
+            ;; This parameter is the frame's own history; buffer-list FRAME
+            ;; additionally appends every other daemon buffer and is NOT used.
+            (frame-parameter frame 'buffer-list)
             (cl-mapcan (lambda (window)
                          (cons (window-buffer window)
                                (append (mapcar #'car (window-prev-buffers window))
@@ -23,8 +26,6 @@
   (when (and (frame-live-p frame) (not (frame-initial-p frame))
              (not (frame-parent frame)))
     (set-frame-parameter frame 'lc-work-buffers (lc-frame-buffers frame))))
-(defun lc-track-window (window &rest _)
-  (lc-track-frame (window-frame (or window (selected-window)))))
 (defun lc-user-work-p (buffer)
   "Whether BUFFER contains modified user work, not ordinary process/log output."
   (and (buffer-live-p buffer)
@@ -114,8 +115,6 @@
 (defun lc-install-frame-policy ()
   (add-hook 'window-buffer-change-functions #'lc-track-frame)
   (add-hook 'after-make-frame-functions #'lc-track-frame)
-  (unless (advice-member-p #'lc-track-window 'set-window-buffer)
-    (advice-add 'set-window-buffer :after #'lc-track-window))
   (unless (advice-member-p #'lc-delete-frame-advice 'delete-frame)
     (advice-add 'delete-frame :around #'lc-delete-frame-advice))
   (when (daemonp) (define-key special-event-map [delete-frame] #'lc-handle-delete-frame)))

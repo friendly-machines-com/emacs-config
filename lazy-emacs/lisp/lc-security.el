@@ -28,10 +28,10 @@ No credentials/config directory is included. Prefer a Guix-packaged adapter late
                                (format "/run/user/%s" (user-uid))))
   "Host daemon socket directory, shared only with explicit opt-in."
   :type 'directory :group 'lc-security)
-(defcustom lc-guix-agent-packages '("python" "ripgrep")
+(defcustom lc-guix-agent-packages '("python" "ripgrep" "coreutils")
   "Additional Guix packages for agents. Add another ACP adapter if using it."
   :type '(repeat string) :group 'lc-security)
-(defcustom lc-guix-compilation-packages nil
+(defcustom lc-guix-compilation-packages '("coreutils")
   "Additional packages beyond a workspace manifest for compilation containers."
   :type '(repeat string) :group 'lc-security)
 (defcustom lc-guix-authorized-manifests nil
@@ -64,14 +64,20 @@ Batch mode uses Emacs's existing noninteractive/inhibit-interaction semantics."
   (when (and (not noninteractive) (null (lc-input-frames))
              (active-minibuffer-window) (> (recursion-depth) 0))
     (abort-recursive-edit)))
-(defun lc--manifest ()
+(defun lc-workspace-root ()
+  "Local directory containing the nearest manifest, independently of its target.
+A manifest may be a symlink to a shared recipe outside the workspace; that does
+not make the recipe's directory the project to expose to a container."
   (when (file-remote-p default-directory)
     (user-error "Guix execution requires a local workspace; refusing host/remote fallback"))
   (let ((root (locate-dominating-file default-directory "manifest.scm")))
     (unless root
       (user-error "No manifest.scm for %s; refusing uncontained execution" default-directory))
-    (let ((file (file-truename (expand-file-name "manifest.scm" root))))
-      (unless (file-regular-p file) (user-error "Not a regular manifest: %s" file)) file)))
+    (file-name-as-directory (file-truename root))))
+(defun lc--manifest ()
+  (let ((file (file-truename (expand-file-name "manifest.scm" (lc-workspace-root)))))
+    (unless (file-regular-p file) (user-error "Not a regular manifest: %s" file))
+    file))
 (defun lc--manifest-hash (file)
   (with-temp-buffer (set-buffer-multibyte nil) (insert-file-contents-literally file)
                     (secure-hash 'sha256 (current-buffer))))
@@ -97,8 +103,14 @@ No implicit Guix state/logs, /tmp, credentials or host Emacs mounts."
   (let* ((manifest (lc--manifest))
          (hash (lc-authorize-manifest manifest))
          (agent (eq kind 'agent))
+         (workspace (lc-workspace-root))
+         (working-directory (if agent (file-truename default-directory) workspace))
          (args (append (list "guix" "shell" "--container" "--network" "--pure"
-                             "--expose=/usr/bin/env" "-m" manifest)
+                             ;; Explicitly share the workspace, not merely whichever
+                             ;; subdirectory the buffer currently happens to visit.
+                             "--no-cwd" (concat "--share=" workspace)
+                             (concat "--cwd=" working-directory)
+                             "--symlink=/usr/bin/env=bin/env" "-m" manifest)
                        (if agent lc-guix-agent-packages lc-guix-compilation-packages))))
     ;; Close the approval/read race as far as the client can; no directory-level bypass.
     (unless (equal hash (lc--manifest-hash manifest))
@@ -123,19 +135,16 @@ No implicit Guix state/logs, /tmp, credentials or host Emacs mounts."
 (defun lc-wrap-compilation (function command &rest args)
   "All compilation-start commands are contained, or fail."
   (let* ((runner (lc-guix-command 'compile))
-         (default-directory (file-name-directory (lc--manifest)))
+         (default-directory (lc-workspace-root))
          (wrapped (mapconcat #'shell-quote-argument
                              (append runner (list "/bin/sh" "-c" command)) " ")))
     (apply function wrapped args)))
-(defun lc-wrap-agent-client (function &rest args)
-  "Enforce the actual runner at the client-creation boundary."
-  (setq agent-shell-text-file-capabilities nil)
-  (let ((agent-shell-text-file-capabilities nil)
-        (default-directory (file-name-directory (lc--manifest))))
-    (apply function args)))
-(defun lc-build-agent-command (command)
-  "Enforce containment for ACP creation AND subsequent client shell commands."
-  (append (lc-guix-command 'agent) command))
+(defun lc-agent-command-prefix (buffer)
+  "Public agent-shell prefix callback: a trusted Guix runner or an error.
+agent-shell documents this option as a function receiving the execution BUFFER;
+its result is prepended to ACP adapter and client shell command argument lists."
+  (unless (buffer-live-p buffer) (user-error "No live agent execution buffer"))
+  (with-current-buffer buffer (lc-guix-command 'agent)))
 (defun lc-install-security ()
   "Install idempotent policy before any services or user commands."
   (dolist (reader '(read-from-minibuffer read-char read-char-exclusive read-key y-or-n-p))
@@ -147,10 +156,8 @@ No implicit Guix state/logs, /tmp, credentials or host Emacs mounts."
       (advice-add 'compilation-start :around #'lc-wrap-compilation)))
   (with-eval-after-load 'agent-shell
     (setq agent-shell-text-file-capabilities nil)
-    (unless (fboundp 'agent-shell--build-command-for-execution)
-      (error "This agent-shell lacks the tested command-wrapping API"))
-    (unless (advice-member-p #'lc-build-agent-command 'agent-shell--build-command-for-execution)
-      (advice-add 'agent-shell--build-command-for-execution :override #'lc-build-agent-command))
-    (unless (advice-member-p #'lc-wrap-agent-client 'agent-shell--make-acp-client)
-      (advice-add 'agent-shell--make-acp-client :around #'lc-wrap-agent-client))))
+    (unless (boundp 'agent-shell-command-prefix)
+      (error "agent-shell lacks its documented command-prefix option"))
+    ;; This is the supported package option, not advice on command/client internals.
+    (setq agent-shell-command-prefix #'lc-agent-command-prefix)))
 (provide 'lc-security)
