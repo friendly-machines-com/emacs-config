@@ -1,0 +1,75 @@
+;;; lc-completion.el --- Completion UI now, applications on invocation -*- lexical-binding: t; -*-
+(require 'lc-core)
+(require 'lc-ui)
+(require 'use-package)
+(use-package vertico :ensure nil :commands vertico-mode)
+(use-package marginalia :ensure nil :commands marginalia-mode)
+(use-package orderless :ensure nil :defer t)
+(use-package company :ensure nil :commands (global-company-mode company-mode)
+  :bind (:map company-active-map ("C-n" . company-select-next) ("C-p" . company-select-previous)
+              ("M-<" . company-select-first) ("M->" . company-select-last)))
+(use-package which-key :ensure nil :commands which-key-mode
+  :config (which-key-setup-side-window-bottom))
+(use-package consult :ensure nil
+  :commands (consult-line consult-ripgrep consult-xref consult-register-window consult-history)
+  :bind (("C-c M-x" . consult-mode-command) ("C-c h" . consult-history)
+         ("C-c k" . consult-kmacro) ("C-c m" . consult-man) ("C-c i" . consult-info)
+         ([remap Info-search] . consult-info) ("C-x M-:" . consult-complex-command)
+         ("C-x b" . consult-buffer) ("C-x 4 b" . consult-buffer-other-window)
+         ("C-x 5 b" . consult-buffer-other-frame) ("C-x t b" . consult-buffer-other-tab)
+         ("C-x r b" . consult-bookmark) ("C-x p b" . consult-project-buffer)
+         ("M-#" . consult-register-load) ("M-'" . consult-register-store)
+         ("C-M-#" . consult-register) ("M-y" . consult-yank-pop)
+         ("M-g e" . consult-compile-error) ("M-g f" . consult-flymake)
+         ("M-g g" . consult-goto-line) ("M-g M-g" . consult-goto-line)
+         ("M-g o" . consult-outline) ("M-g m" . consult-mark) ("M-g k" . consult-global-mark)
+         ("M-g i" . consult-imenu) ("M-g I" . consult-imenu-multi)
+         ("M-s d" . consult-find) ("M-s c" . consult-locate) ("M-s g" . consult-grep)
+         ("M-s G" . consult-git-grep) ("M-s r" . consult-ripgrep)
+         ("M-s l" . consult-line) ("M-s L" . consult-line-multi)
+         ("M-s k" . consult-keep-lines) ("M-s u" . consult-focus-lines)
+         ("M-s e" . consult-isearch-history)
+         :map isearch-mode-map ("M-e" . consult-isearch-history)
+         ("M-s e" . consult-isearch-history) ("M-s l" . consult-line) ("M-s L" . consult-line-multi)
+         :map minibuffer-local-map ("M-s" . consult-history) ("M-r" . consult-history))
+  :init
+  (setq xref-show-xrefs-function #'consult-xref xref-show-definitions-function #'consult-xref)
+  (advice-add 'register-preview :override #'consult-register-window)
+  :config
+  (consult-customize consult-theme :preview-key '(:debounce .2 any)
+                    consult-ripgrep consult-git-grep consult-grep consult-man
+                    consult-bookmark consult-recent-file consult-xref
+                    consult--source-bookmark consult--source-file-register
+                    consult--source-recent-file consult--source-project-recent-file
+                    :preview-key '(:debounce .4 any)))
+(use-package embark :ensure nil :commands (embark-act embark-export))
+(use-package embark-consult :ensure nil :after (embark consult))
+(use-package wgrep :ensure nil :commands wgrep-change-to-wgrep-mode)
+(defun lc-edit-grep-results ()
+  "Export Consult Ripgrep synchronously, then enable editing in the export buffer."
+  (interactive)
+  (unless (eq (bound-and-true-p minibuffer-completion-category) 'consult-grep)
+    ;; Older Consult doesn't set that variable; preserve the old textual detection.
+    (unless (string-match-p "Ripgrep" (buffer-string))
+      (user-error "This action is for Ripgrep results")))
+  (lc-require 'embark) (lc-require 'wgrep)
+  ;; Export exits the minibuffer. The collect buffer knows its exporter, avoiding two racing timers.
+  (embark-export)
+  (run-at-time 0 nil
+               (lambda ()
+                 (when (derived-mode-p 'grep-mode)
+                   (wgrep-change-to-wgrep-mode)))))
+(keymap-set minibuffer-local-map "C-c C-e" #'lc-edit-grep-results)
+(defun lc-start-completion ()
+  (require 'savehist) (savehist-mode 1)
+  (dolist (pair '((vertico . vertico-mode) (marginalia . marginalia-mode)
+                  (company . global-company-mode) (which-key . which-key-mode)))
+    (when (require (car pair) nil t) (funcall (cdr pair) 1)))
+  ;; Styles must be registered, not just named in completion-styles.
+  (lc-require 'orderless))
+(keymap-global-set "<Search>" #'consult-line)
+(keymap-global-set "M-<Search>" #'consult-ripgrep)
+(keymap-global-set "<Launch1>" #'embark-act)
+(lc-action 'ripgrep "Search" #'consult-ripgrep "ripgrep" "Search using Ripgrep")
+(lc-action 'embark "Act" #'embark-act "embark-act" "Act on the current target")
+(provide 'lc-completion)
