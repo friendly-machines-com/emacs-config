@@ -4,6 +4,14 @@ Implementation is isolated here; the original startup files and live state are u
 
 ## Launch
 
+**Requires Emacs PGTK 31.1 or later**, including `frame-initial-p`. The package
+available in current Guix channels is not necessarily the executable selected by
+your installed profile/PATH. Check the actual runtime first:
+
+```sh
+guix shell -m /home/dannym/.config/emacs/lazy-emacs/manifest.scm -- emacs --version
+```
+
 From the original configuration directory:
 
 ```sh
@@ -14,7 +22,7 @@ guix shell -m "$DIR/manifest.scm" -- emacsclient --socket-name="$DIR/state/serve
 
 For an ordinary standalone GUI test, omit `--daemon=lazy-emacs`. Do **not** add `-Q`: it bypasses normal init/site integration. The frame-save/close policy is designed for your daemon deployment.
 
-Use your existing Guix Home/profile if it already supplies the dependencies; `manifest.scm` is a reproducible package/environment reference, not an Emacs installer. The tested channel revisions are in `guix/channels.scm`; optionally use `guix time-machine -C ... -- shell ...` to reproduce them. No package.el archive refresh, installation, :ensure t, or grammar download is part of startup.
+Use your existing Guix Home/profile only if its actual Emacs executable is 31.1+ and it supplies the dependencies; `manifest.scm` is a reproducible package/environment reference, not an Emacs installer. The tested channel revisions are in `guix/channels.scm`; optionally use `guix time-machine -C ... -- shell ...` to reproduce them. No package.el archive refresh, installation, :ensure t, or grammar download is part of startup.
 
 **Real Org data must be available** at the migrated default paths `~/doc/org-agenda` and `~/doc/org-roam`, or configure `org-agenda-files` and `org-mem-watch-dirs` for your actual locations. Production does not filter out missing paths or invent empty data directories. The test suite supplies its own documents separately. A timer being active is not evidence that an unavailable real calendar was processed.
 

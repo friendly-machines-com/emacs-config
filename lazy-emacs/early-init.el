@@ -1,5 +1,13 @@
 ;;; early-init.el --- Early PGTK daemon policy -*- lexical-binding: t; -*-
 
+;; Check the running executable, not the version available from Guix channels.
+;; Fail before changing startup state when the validated runtime is not present.
+(unless (and (version<= "31.1" emacs-version) (fboundp 'frame-initial-p))
+  (error "lazy-emacs requires Emacs 31.1+ with frame-initial-p; running %s. Use guix shell -m %s -- emacs --init-directory=%s"
+         emacs-version
+         (expand-file-name "manifest.scm" (file-name-directory load-file-name))
+         (file-name-directory load-file-name)))
+
 ;;; Mitigate TERRIBLE autoload storm on startup
 
 ;; Less gc on startup.
