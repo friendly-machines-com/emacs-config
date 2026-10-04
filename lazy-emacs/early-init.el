@@ -1,5 +1,12 @@
 ;;; early-init.el --- Early PGTK daemon policy -*- lexical-binding: t; -*-
 
+(profiler-start 'cpu)
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (profiler-report)
+            (profiler-stop)))
+            
 ;; Check the running executable, not the version available from Guix channels.
 ;; Fail before changing startup state when the validated runtime is not present.
 (unless (and (version<= "31.1" emacs-version) (fboundp 'frame-initial-p))
