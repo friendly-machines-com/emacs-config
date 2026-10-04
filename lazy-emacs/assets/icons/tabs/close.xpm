@@ -1,0 +1,26 @@
+/* XPM */
+static char * close_xpm[] = {
+/* columns rows colors chars-per-pixel */
+"18 18 4 1",
+"  c black",
+". c #808080",
+"X c gray75",
+"o c None",
+"ooooXXXXXXXXXXoooo",
+"oooXXXXXXXXXXXXooo",
+"ooXXXXXXXXXXXXXXoo",
+"oXXXXXXXXXXXXXXXXo",
+"XXXX XXXXXXXX XXXX",
+"XXXXX XXXXXX XXXXX",
+"XXXXXX XXXX XXXXXX",
+"XXXXXXX XX XXXXXXX",
+"XXXXXXXX  XXXXXXXX",
+"XXXXXXXX  XXXXXXXX",
+"XXXXXXX XX XXXXXXX",
+"XXXXXX XXXX XXXXXX",
+"XXXXX XXXXXX XXXXX",
+"XXXX XXXXXXXX XXXX",
+"oXXXXXXXXXXXXXXXXo",
+"ooXXXXXXXXXXXXXXoo",
+"oooXXXXXXXXXXXXooo",
+"ooooXXXXXXXXXXoooo"};
