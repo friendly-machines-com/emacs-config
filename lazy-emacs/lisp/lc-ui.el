@@ -151,7 +151,7 @@ properties such as a buffer-state :enable expression."
   (add-hook 'temp-buffer-setup-hook #'lc-color-buffer)
   (update-glyphless-char-display 'glyphless-char-display-control
                                 '((format-control . empty-box) (no-font . empty-box)))
-  (when (require 'solarized-theme nil t) (load-theme 'solarized-light t))
+  (load-theme 'solarized t)
   (add-hook 'after-make-frame-functions #'lc-graphic-ui)
   (dolist (frame (frame-list)) (lc-graphic-ui frame))
   (when (require 'popper nil t) (popper-mode 1) (popper-echo-mode 1))

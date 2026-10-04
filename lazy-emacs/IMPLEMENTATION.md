@@ -25,6 +25,8 @@ The rejected Org Mem path-filtering advice and all associated filtering function
 
 Other comparable cases were reviewed:
 
+- **Solarized correction:** the initial manifest unnecessarily substituted `emacs-solarized-theme` for the user's installed `emacs-color-theme-solarized`. They are different implementations sharing a library filename, not an established version upgrade. Restore `emacs-color-theme-solarized`, load its `solarized` theme, and preserve light background selection. The exact restored implementation passes init and PGTK GUI tests; a dedicated regression checks the selected theme/package interface.
+
 - **agent-shell:** no advice on its private client factory/command builder. Use the documented command-prefix callback and ACP's public constructor inside the owned Loki adapter.
 - **Envrc/buffer-env:** removed stale private update interception and forced absolute REPL-program rewrites. Programs remain names resolved in the current environment.
 - **Org Noter:** current stock has the historical start-location fix and module location hooks. Keep stock getters/start-location, the supplied PDFTools module, a thin public precise-note wrapper and public annotation activation hook.

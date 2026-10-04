@@ -9,7 +9,7 @@
    "emacs-agent-shell" "emacs-acp" "emacs-shell-maker"
    "emacs-vertico" "emacs-marginalia" "emacs-orderless" "emacs-company"
    "emacs-consult" "emacs-embark" "emacs-wgrep"
-   "emacs-spacious-padding" "emacs-solarized-theme" "emacs-pulsar" "emacs-ultra-scroll"
+   "emacs-spacious-padding" "emacs-color-theme-solarized" "emacs-pulsar" "emacs-ultra-scroll"
    "emacs-bar-cursor" "emacs-popper" "emacs-nerd-icons"
    "emacs-jinx" "emacs-yasnippet" "emacs-tempel" "emacs-smartparens"
    "emacs-rainbow-delimiters" "emacs-comment-tags" "emacs-outshine" "emacs-form-feed"

@@ -28,6 +28,13 @@
 (defvar lc-startup-features (copy-sequence features)
   "Exact post-init feature snapshot, before activation tests intentionally load apps.")
 (princ (format "INIT_SECONDS=%.3f\n" (float-time (time-subtract (current-time) lc-integration-start))))
+(ert-deftest lc-original-solarized-implementation ()
+  ;; The original package is color-theme-solarized. The unrelated solarized-theme
+  ;; package shares a library filename but has different theme names/settings.
+  (should (memq 'solarized custom-enabled-themes))
+  (should (eq frame-background-mode 'light))
+  (should (locate-library "solarized-definitions"))
+  (should-not (memq 'solarized-light custom-enabled-themes)))
 (ert-deftest lc-real-org-tree-and-services ()
   (should (string-prefix-p (file-truename (expand-file-name "vendor/org/lisp" lc-integration-source))
                            (file-truename (locate-library "org"))))
