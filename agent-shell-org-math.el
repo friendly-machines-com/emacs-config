@@ -264,24 +264,29 @@ them."
       (when agent-shell-org-math-mode
         (if (agent-shell-org-math--conversion-running-p)
             (agent-shell-org-math--schedule-drain buffer)
+          ;; Recover first; `render-missing' only appends to the queue and
+          ;; schedules a later drain, so cached previews cannot recurse down
+          ;; the current Lisp stack.
+          (when agent-shell-org-math--recovery-needed
+            (setq agent-shell-org-math--recovery-needed nil)
+            (agent-shell-org-math-render-missing))
           (let ((entries agent-shell-org-math--pending-entries))
             (setq agent-shell-org-math--pending-entries nil)
             (when entries
               (unwind-protect
                   (agent-shell-org-math--flush entries)
-                (mapc #'agent-shell-org-math--detach-entry entries))))
-          (when agent-shell-org-math--recovery-needed
-            (setq agent-shell-org-math--recovery-needed nil)
-            (agent-shell-org-math-render-missing)))))))
+                (mapc #'agent-shell-org-math--detach-entry entries)))))))))
 
 (defun agent-shell-org-math--enqueue (entries)
-  "Queue marker-based ENTRIES and start them when Org is idle."
+  "Queue marker-based ENTRIES for a later non-recursive drain."
   (when entries
     (setq agent-shell-org-math--pending-entries
           (nconc agent-shell-org-math--pending-entries entries)))
-  (if (agent-shell-org-math--conversion-running-p)
-      (agent-shell-org-math--schedule-drain)
-    (agent-shell-org-math--drain-buffer (current-buffer))))
+  ;; Always cross a timer boundary.  `org-latex-preview-place' may satisfy an
+  ;; entirely cached batch synchronously; draining directly from here would
+  ;; let recovery enqueue and drain recursively until Emacs hits
+  ;; `max-lisp-eval-depth'.
+  (agent-shell-org-math--schedule-drain))
 
 (defun agent-shell-org-math-clear-error-markings ()
   "Clear error markings on OUR previews that also show an image.
