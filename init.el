@@ -227,14 +227,15 @@
  '(org-ditaa-jar-path "/home/dannym/.guix-home/profile/lib/ditaa0.11.0.jar")
  '(org-export-exclude-tags '("confidential"))
  '(org-export-select-tags '("public"))
- '(org-format-latex-options
-   '(:foreground default :background default :scale 0.5 :html-foreground
-                 "Black" :html-background "Transparent" :html-scale
-                 1.0 :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")))
  '(org-id-link-to-org-use-id 'use-existing)
  '(org-latex-packages-alist
    '(("" "braket" t nil) ("" "esint" t nil) ("" "units" t nil)
      ("" "unicode-math" t nil)))
+ '(org-latex-preview-appearance-options
+   '(:foreground default :background default :scale 2 :html-foreground
+                 "Black" :html-background "Transparent" :html-scale
+                 1.0 :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")))
+ '(org-latex-preview-process-default 'dvisvgm)
  '(org-msg-convert-citation t)
  '(org-msg-greeting-fmt "Hello%s,")
  '(org-msg-posting-style nil)
