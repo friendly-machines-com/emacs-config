@@ -368,6 +368,23 @@
 					; rust-format-buffer C-c C-f
 					;(setq rust-format-on-save t)
 
+
+(add-hook 'lean-mode-hook
+          (lambda ()
+            "Prettify Lean"
+                                        ;extDeriv
+                                        ;fderiv  ℝ f x
+                                        ; in true false is isnot issubset issuperset
+
+					; U+2264 less than or equal ≤
+					; U+2265 greater than or equal ≥
+					; U+2216 set minus ∖
+					; U+2229 intersection ∩
+					; U+222A union ∪
+            ))
+
+					; rust-format-buffer C-c C-f
+					;(setq rust-format-on-save t)
 					; TODO: html-mode-hook which un-awfuls <mi> etc
 (add-hook 'rust-mode-hook
           (lambda ()
