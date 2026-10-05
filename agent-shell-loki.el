@@ -136,8 +136,8 @@ Requires loki-acp adapter for ACP integration."))
         ████        ████
 " "\n")))
     (propertize text 'font-lock-face (if is-dark
-                                         '(:foreground "#ffffff" :inherit fixed-lokitch)
-                                       '(:foreground "#000000" :inherit fixed-lokitch)))))
+                                         '(:foreground "#ffffff" :inherit fixed-pitch)
+                                       '(:foreground "#000000" :inherit fixed-pitch)))))
 
 (provide 'agent-shell-loki)
 
