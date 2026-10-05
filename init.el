@@ -273,8 +273,6 @@
  '(default ((t (:family "Noto Sans Mono" :foundry "GOOG" :slant normal :weight regular :height 110 :width normal))))
  '(fixed-pitch ((t (:family "Noto Mono"))))
  '(lsp-ui-sideline-global ((t (:family "Dijkstra Italic" :italic t :weight regular :height 0.8))))
- '(mode-line-active ((t (:font "Noto Sans 8"))))
- '(mode-line-inactive ((t (:font "Noto Sans 8"))))
  '(org-table ((t (:foreground "#2aa198" :family "Atkinson Hyperlegible"))))
  '(tab-line ((t (:height 0.9 :foreground "black" :background "grey85" :inherit variable-pitch)))))
 
