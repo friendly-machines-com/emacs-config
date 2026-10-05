@@ -142,7 +142,7 @@
     (define-fringe-bitmap 'right-curly-arrow mf-right-curly-arrow nil nil 'center)
     (define-fringe-bitmap 'left-curly-arrow mf-left-curly-arrow nil nil 'center)
     (define-fringe-bitmap 'right-triangle mf-right-debug-arrow nil nil 'center)
-    (define-fringe-bitmap 'left-triange mf-left-debug-arrow nil nil 'center))
+    (define-fringe-bitmap 'left-triangle mf-left-debug-arrow nil nil 'center))
   (message "Applied modern-fringes."))
 
 (defun modern-fringes--revert ()
