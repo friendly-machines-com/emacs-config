@@ -385,6 +385,7 @@
 
 					; rust-format-buffer C-c C-f
 					;(setq rust-format-on-save t)
+
 					; TODO: html-mode-hook which un-awfuls <mi> etc
 (add-hook 'rust-mode-hook
           (lambda ()
