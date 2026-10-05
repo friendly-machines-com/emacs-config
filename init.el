@@ -622,9 +622,9 @@
 (use-package magit
   :ensure f)
 
-                                        ;(use-package forge
-                                        ;  :ensure f
-                                        ;  :after magit)
+(use-package forge
+  :ensure f
+  :after magit)
 
                                         ;(use-package doom-modeline
                                         ;  :ensure f
