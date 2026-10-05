@@ -3600,3 +3600,69 @@ FILETAGS."
 
         )
 
+;;; This hopefully avoids the dreaded "ask a question while the frame is invisible"
+
+;(defun my-accessible-frame-p ()
+;  "Return non-nil if Emacs has a visible or iconified user frame."
+;  (catch 'found
+;    (dolist (frame (frame-list))
+;      (when (and (frame-live-p frame)
+;                 (frame-visible-p frame)
+;                 (not (frame-parameter frame 'parent-frame))
+;                 (not (frame-parameter frame 'tooltip)))
+;        (throw 'found t)))))
+
+;(defun my-abort-headless-minibuffer (minibuffer-window)
+;  "Abort MINIBUFFER-WINDOW if it is still active with no user frame."
+;  (when (and (eq minibuffer-window (active-minibuffer-window))
+;             (not (my-accessible-frame-p)))
+;    (abort-recursive-edit)))
+
+;(defun my-schedule-headless-minibuffer-check ()
+;  ;; Waiting briefly avoids cancelling during an ordinary frame-mapping delay.
+;  (run-at-time 0.25 nil
+;               #'my-abort-headless-minibuffer
+;               (active-minibuffer-window)))
+
+;(defun my-check-minibuffer-after-frame-deletion (_deleted-frame)
+;  (when (and (active-minibuffer-window)
+;             (not (my-accessible-frame-p)))
+;    (abort-recursive-edit)))
+
+;(add-hook 'minibuffer-setup-hook
+;          #'my-schedule-headless-minibuffer-check)
+;
+;(add-hook 'after-delete-frame-functions
+;          #'my-check-minibuffer-after-frame-deletion)
+
+;(defun my-accessible-frame-p ()
+;  (catch 'found
+;    (dolist (frame (frame-list))
+;      (when (and (frame-live-p frame)
+;                 (frame-visible-p frame)
+;                 (not (frame-parameter frame 'parent-frame))
+;                 (not (frame-parameter frame 'tooltip)))
+;        (throw 'found t)))))
+
+;(defun my-inhibit-headless-prompt (function &rest arguments)
+;  (if (my-accessible-frame-p)
+;      (apply function arguments)
+;    ;; No recursive minibuffer exists yet, so signal quit directly.
+;    (signal 'quit nil)))
+
+;(advice-add 'read-from-minibuffer
+;            :around #'my-inhibit-headless-prompt)
+
+;; This is the function used in your backtrace.
+;(advice-add 'read-char-from-minibuffer
+;              :around #'my-inhibit-headless-prompt)
+
+;(defun my-abort-minibuffer-after-last-frame (_deleted-frame)
+;  (when (and (active-minibuffer-window)
+;             (not (my-accessible-frame-p)))
+;    (abort-recursive-edit)))
+
+;(add-hook 'after-delete-frame-functions
+;          #'my-abort-minibuffer-after-last-frame)
+
+;;; End minibuffer emacs hang avoidance
