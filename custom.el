@@ -3573,6 +3573,7 @@ FILETAGS."
                                         ;(my-git-rebase-setup-toolbar)
 
 (load (locate-user-emacs-file "agent-shell-loki.el"))
+(load (locate-user-emacs-file "agent-shell-org-math.el"))
 
 (use-package agent-shell
   :config
