@@ -3579,11 +3579,24 @@ FILETAGS."
   :config
   ;; (setq agent-shell-confirm-tool-execution nil)
   (setq agent-shell-header-style 'text)
+  (setq agent-shell-session-restore-verbosity 'full)
   ;; Prefixes the command that starts the agent, or a shell command that should be run so it is executed inside the container.
-  ;(setq agent-shell-container-command-runner '("guix" "shell" "-C" "-N" "-W" "-m" "manifest.scm" "--"))
+  ;(setq agent-shell-container-command-runner '("guix" "shell" "-C" "-N" "-W" "-m" "manifest.scm" "claude-agent-acp" "codex-acp" "--"))
   ;(setq agent-shell-anthropic-claude-command
   ;      (list "claude-code-acp"))
-  (setq agent-shell-preferred-agent-config
-   (agent-shell-loki-make-agent-config))
+  ;(setq agent-shell-preferred-agent-config
+  ;      (agent-shell-anthropic-make-claude-code-config))
+
+  ;(setq agent-shell-preferred-agent-config
+  ; (agent-shell-loki-make-agent-config))
+
+   (add-to-list 'agent-shell-agent-configs
+             #'agent-shell-loki-make-agent-config)
+
+   (setq agent-shell-preferred-agent-config '(preselect . loki))
+   ;(setq agent-shell-preferred-agent-config 'loki)
+
+(add-hook 'agent-shell-mode-hook #'agent-shell-org-math-mode)
+
         )
 
