@@ -129,7 +129,7 @@ user-enabled xenops-mode survives the mode being toggled off.")
              (not (bound-and-true-p xenops-mode)))
     (setq agent-shell-xenops-math--xenops-by-us t)
     (xenops-mode 1))
-  ;; Advices are mode-gated in their bodies (no-ops in buffers
+  ;; Both advices are mode-gated in their bodies (no-ops in buffers
   ;; without this mode), so installing them globally is safe.
   (unless (advice-member-p 'agent-shell-xenops-math--preamble-around
                             'xenops-math-latex-get-preamble-lines)
@@ -257,9 +257,13 @@ CONTEXT is the alist from `agent-shell-markdown-context'."
        (lambda (start end)
          ;; A dollar adjacent to another dollar belongs to a $$
          ;; construct: during streaming `$$x$' must stay raw so the
-         ;; complete `$$x$$' claims once its closer arrives.
+         ;; complete `$$x$$' claims once its closer arrives.  A
+         ;; delimiter that was written \\$ (decoded to $ by the
+         ;; escape pass) is prose, not math.
          (or (eq (char-before start) ?$)
-             (eq (char-after end) ?$)))))
+             (eq (char-after end) ?$)
+             (agent-shell-xenops-math--escaped-dollar-p start)
+             (agent-shell-xenops-math--escaped-dollar-p (1- end))))))
     ;; 3. Unclosed delimiters hold the streaming frontier.
     (setq pending (agent-shell-xenops-math--pending-watermark code-ranges))
     (and pending (list (cons :watermark pending)))))
@@ -294,6 +298,16 @@ malformed text."
            while (and (>= pos (point-min)) (eq (char-after pos) ?\\))
            count t into n
            finally return (cl-oddp n)))
+
+(defun agent-shell-xenops-math--escaped-dollar-p (pos)
+  "Return non-nil when the $ at POS was written as an escaped \\$.
+agent-shell's escape pass decodes \\$ to a literal $ between
+render passes; the escape then exists only as the
+`agent-shell-markdown-source' property on the decoded character.
+A match using such a $ as a delimiter must be skipped, or escaped
+prose (\\$x\\$) turns into claimed math one pass after the
+renderer correctly declined it."
+  (equal (get-text-property pos 'agent-shell-markdown-source) "\\$"))
 
 (defun agent-shell-xenops-math--inside-code-span-p (start)
   "Return non-nil when START sits inside an open inline code span.
