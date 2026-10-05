@@ -255,7 +255,7 @@
                          ("=" org-verbatim verbatim)
                          ("~" org-code verbatim) ("," org-quote))))
  '(solarized-contrast 'normal)
- '(spacious-padding-subtle-frame-lines t)
+ '(spacious-padding-subtle-frame-lines nil) ; work around really stupid bug (a)
  '(spacious-padding-subtle-mode-line t)
  '(spacious-padding-widths
    '(:internal-border-width 0 :header-line-width 4 :mode-line-width 6
@@ -851,3 +851,11 @@
 (setq recentf-max-menu-items 25)
 
 (setq debug-on-quit nil)
+
+;;; (a) `spacious-padding-0.9.0`, line 383-385:
+;;;
+;;;(list :underline
+;;;      (list :color (or (spacious-padding--get-face-line-color face fallback subtle-key)
+;;;                       (spacious-padding--face-foreground 'default))
+;;;            :position t))
+;;;Both fallbacks can return unspecified. (spacious-padding--face-foreground 'default) reads the default face's foreground, which on headless daemon is the symbol unspecified. That gets built as :color unspecified, and xfaces.c:3409 rejects it, failing all future frame creation (yes, really).

@@ -236,7 +236,7 @@ customize the variable `user-emacs-directory-warning'."
 
 (use-package spacious-padding
   :config
-  (spacious-padding-mode -1) ; it's broken, who knows why.
+  (spacious-padding-mode 1)
   ;; TODO on frame hook
   (custom-set-faces
    '(mode-line-active ((t (:font "Noto Sans 8"))))
