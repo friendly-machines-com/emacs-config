@@ -397,7 +397,7 @@
  '(scroll-margin 0)
  '(scroll-preserve-screen-position nil)
  '(solarized-contrast 'normal)
- '(spacious-padding-subtle-frame-lines t)
+ '(spacious-padding-subtle-frame-lines nil) ; must stay nil: see below
  '(spacious-padding-subtle-mode-line t)
  '(spacious-padding-widths
  '(:internal-border-width 0 :header-line-width 4 :mode-line-width 6
@@ -549,3 +549,18 @@
    (:height 0.9 :foreground "black" :background "grey85" :inherit
 	    variable-pitch))))
 )
+
+;;; `spacious-padding-subtle-frame-lines' must stay nil.
+;;;
+;;; spacious-padding 0.9.0, `spacious-padding--set-face-box-padding' (l.383-385):
+;;;
+;;;(list :underline
+;;;      (list :color (or (spacious-padding--get-face-line-color face fallback subtle-key)
+;;;                       (spacious-padding--face-foreground 'default))
+;;;            :position t))
+;;;
+;;; Both fallbacks can return `unspecified'. The second reads `default''s
+;;; foreground, which on a headless daemon is the symbol `unspecified'. That
+;;; reaches xfaces.c as :color unspecified, is rejected, and fails all later
+;;; frame creation. Setting the variable to t reintroduces the failure; the
+;;; guard in `lc-graphic-ui' only repairs faces spacious-padding itself uses.

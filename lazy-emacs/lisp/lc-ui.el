@@ -127,7 +127,11 @@ properties such as a buffer-state :enable expression."
       (when (require 'spacious-padding nil t)
         ;; Emacs 31 introduced faces older themes leave inheriting. Padding needs
         ;; actual colors, not the raw symbol `unspecified', for line/box specs.
-        (dolist (face '(header-line-inactive mode-line-active mode-line-inactive))
+        ;; spacious-padding 0.9.0 additionally falls back to `default''s foreground
+        ;; when it draws the subtle underline, and on a headless daemon that is
+        ;; `unspecified', which xfaces.c rejects, failing every later frame. Give
+        ;; `default' a concrete color here so no padding code path can emit one.
+        (dolist (face '(default header-line-inactive mode-line-active mode-line-inactive))
           (unless (stringp (face-attribute face :foreground frame))
             (set-face-attribute face frame :foreground (face-foreground face frame t))))
         (spacious-padding-mode 1))
