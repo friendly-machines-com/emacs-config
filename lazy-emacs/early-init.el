@@ -1,11 +1,21 @@
 ;;; early-init.el --- Early PGTK daemon policy -*- lexical-binding: t; -*-
 
-(profiler-start 'cpu)
+;(profiler-start 'cpu)
+;
+;(add-hook 'emacs-startup-hook
+;          (lambda ()
+;            (profiler-report)
+;            (profiler-stop)))
 
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (profiler-report)
-            (profiler-stop)))
+(defun my/time-call (orig-fn feature &rest args)
+  (let* ((t0 (float-time))
+         (res (apply orig-fn feature args))
+         (elapsed (- (float-time) t0)))
+    (when (> elapsed 0.03) ;; Only log loads taking longer than 30ms
+      (message "[LOAD] %-25s took %.3fs" feature elapsed))
+    res))
+
+(advice-add 'require :around #'my/time-call)
             
 ;; Check the running executable, not the version available from Guix channels.
 ;; Fail before changing startup state when the validated runtime is not present.
@@ -45,10 +55,32 @@
 (setq user-emacs-directory lc-config-root
       package-enable-at-startup nil
       user-lisp-auto-scrape nil)
+;; Guix puts many package directories ahead of Emacs's own Lisp directories.
+;; Searching those for every built-in dependency made gnus-sum take 1.18s;
+;; searching built-ins first reduced it to 0.16s in the same environment.
+;; Stable-partition the existing path (no duplicates or removed directories).
+;; Add our intentional local overrides afterwards so they still take precedence.
+(let ((builtin-root (file-name-as-directory
+                     (expand-file-name "../lisp" data-directory)))
+      builtin-path package-path)
+  (dolist (directory load-path)
+    (if (and (stringp directory)
+             (string-prefix-p builtin-root
+                              (file-name-as-directory (expand-file-name directory))))
+        (push directory builtin-path)
+      (push directory package-path)))
+  (setq load-path (append (nreverse builtin-path) (nreverse package-path))))
 (add-to-list 'load-path (expand-file-name "lisp" lc-config-root))
 (add-to-list 'load-path (expand-file-name "user-lisp" lc-config-root))
 ;; Matching local Org modules must win over both the built-in and Guix Org.
 (add-to-list 'load-path (expand-file-name "vendor/org/lisp" lc-config-root))
+;; Compile local Org before configuration/services load it. ARG=0 includes
+;; missing .elc files; without FORCE, unchanged files are skipped. Measured
+;; Org + agenda loading fell from 1.49s to 0.43s; an unchanged check took 0.10s.
+;; The first run compiles everything (~7.55s). Shared macro changes may require
+;; a manual forced rebuild because this check tracks timestamps, not dependencies.
+(require 'bytecomp)
+(byte-recompile-directory (expand-file-name "vendor/org/lisp" lc-config-root) 0)
 (setq agent-shell-text-file-capabilities nil)
 (require 'lc-core)
 (require 'lc-security)

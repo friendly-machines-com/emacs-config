@@ -27,7 +27,7 @@
 (lc-start-completion)
 (lc-start-editing)
 (when lc-org-services-enabled (lc-start-org-services))
-(when lc-profile-startup (require 'profiler) (profiler-start 'cpu))
+;; Startup sampling is owned by early-init; never restart/reset it here.
 (setq gc-cons-threshold (if (boundp 'lc--normal-gc-threshold)
                             lc--normal-gc-threshold (* 8 1024 1024)))
 (setq lc-init-finished t)

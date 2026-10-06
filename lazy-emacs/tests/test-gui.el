@@ -140,8 +140,7 @@
                                (concat (replace-regexp-in-string "[^A-Za-z0-9-]" "_" (buffer-name)) ".log")
                                (file-name-directory (getenv "LC_GUI_REPORT"))) nil 'silent))))
           (lc-gui-report `((status . ,(if (zerop failures) "ready" "failed"))
-                           (failures . ,failures)
-                           (socket . ,(expand-file-name server-name server-socket-dir))))))
+                           (failures . ,failures)))))
     (error (lc-gui-report `((status . "failed") (error . ,(error-message-string error-data)))))))
 ;; Let normal daemon/server initialization complete before creating any GUI.
 (run-at-time .3 nil #'lc-gui-run)

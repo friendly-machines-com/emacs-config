@@ -71,9 +71,7 @@ Disabling this explicitly disables reminders; it is not a performance default."
         nsm-settings-file (lc-state-file "network-security.data")
         nov-save-place-file (lc-state-file "nov-places")
         url-configuration-directory (lc-cache-file "url/")
-        elfeed-db-directory (lc-state-file "elfeed/")
-        server-name "lazy-emacs"
-        server-socket-dir (lc-state-file "server"))
+        elfeed-db-directory (lc-state-file "elfeed/"))
   (when (fboundp 'startup-redirect-eln-cache)
     (startup-redirect-eln-cache (lc-cache-file "eln/"))))
 (defvar lc--deferred-custom nil)
