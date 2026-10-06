@@ -251,7 +251,11 @@
  '(package-selected-packages nil)
  '(read-mail-command 'mu4e)
  '(safe-local-variable-values
-   '((org-emphasis-alist ("/" italic) ("_" underline)
+   '((eval setq-local bug-reference-bug-regexp
+           (rx
+            (group (seq (32 "guix/guix") (or "#" "!"))
+                   (group (one-or-more digit)))))
+     (org-emphasis-alist ("/" italic) ("_" underline)
                          ("=" org-verbatim verbatim)
                          ("~" org-code verbatim) ("," org-quote))))
  '(solarized-contrast 'normal)
