@@ -3,7 +3,6 @@
 /cache/
 /private.el
 /.authinfo.gpg
-/gui-settings.el
 /user-lisp/**/*autoloads.el
 **/*.elc
 **/*.eln
