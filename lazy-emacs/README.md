@@ -33,8 +33,7 @@ Use your existing Guix Home/profile only if its actual Emacs executable is 31.1+
 - `lisp/`: feature declarations/integrations.
 - `user-lisp/`: maintained local commands/adapters.
 - `vendor/`: isolated matching source snapshots (especially your custom Org preview).
-- `defaults.el`: initial migrated preferences, not reapplied on every launch.
-- `gui-settings.el`: created from defaults once; **Emacs Customize owns it thereafter**.
+- `gui-settings.el`: the only settings file; **Emacs Customize owns it**.
 - `private.el`: local-only migrated news credential; ignored by Git, never included in tests.
 - `state/`, `cache/`: independent runtime/generated files, ignored by Git.
 

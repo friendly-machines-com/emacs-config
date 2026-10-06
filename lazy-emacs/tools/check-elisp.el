@@ -2,7 +2,7 @@
 ;; Run from the original config root with emacs -Q --batch -l this file.
 (defvar lc-check-root (expand-file-name "../" (file-name-directory load-file-name)))
 (let ((files (mapcar (lambda (name) (expand-file-name name lc-check-root))
-                     '("early-init.el" "init.el" "defaults.el"))))
+                     '("early-init.el" "init.el"))))
   (dolist (directory '("lisp" "user-lisp" "tests"))
     (setq files (append files (directory-files (expand-file-name directory lc-check-root) t "\\.el\\'"))))
   (dolist (file files)

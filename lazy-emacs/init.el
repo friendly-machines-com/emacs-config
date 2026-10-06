@@ -22,10 +22,7 @@
 (dolist (module '(lc-completion lc-ui lc-editing lc-projects lc-programming
                    lc-org lc-documents lc-mail lc-media lc-agents))
   (require module))
-;; Seed exactly once. GUI set/save/reset owns all future changes.
-(unless (file-exists-p custom-file)
-  (copy-file (lc-file "defaults.el") custom-file)
-  (set-file-modes custom-file #o600))
+;; gui-settings.el is the only settings file, and GUI set/save/reset owns it.
 (load custom-file nil t)
 (load (lc-file "private.el") t t)
 ;; The user explicitly requested these services at startup, not on first use.

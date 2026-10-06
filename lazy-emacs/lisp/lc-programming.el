@@ -41,7 +41,7 @@ Install a remap only when the target command and its grammar are available."
     (when items (setq-local prettify-symbols-alist (append items prettify-symbols-alist))
           (prettify-symbols-mode 1))))
 (add-hook 'after-change-major-mode-hook #'lc-prettify-program)
-;; The public rust-mode option in defaults.el is evaluated before this library
+;; The public rust-mode option in gui-settings.el is evaluated before this library
 ;; chooses its parent. No mode-function patch or per-buffer interception is needed.
 (use-package rust-mode :ensure nil :defer t)
 (use-package rustic :ensure nil :mode ("\\.rs\\'" . rustic-mode)

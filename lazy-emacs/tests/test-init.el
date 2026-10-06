@@ -7,7 +7,7 @@
 (defvar lc-integration-source (expand-file-name "../" (file-name-directory load-file-name)))
 (make-directory (expand-file-name "cache" lc-integration-source) t)
 (defvar lc-integration-root (make-temp-file (expand-file-name "cache/test-init-" lc-integration-source) t))
-(dolist (file '("early-init.el" "init.el" "defaults.el"))
+(dolist (file '("early-init.el" "init.el" "gui-settings.el"))
   (copy-file (expand-file-name file lc-integration-source) (expand-file-name file lc-integration-root)))
 (dolist (dir '("lisp" "user-lisp" "vendor" "assets"))
   (make-symbolic-link (expand-file-name dir lc-integration-source) (expand-file-name dir lc-integration-root)))

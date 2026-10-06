@@ -4,7 +4,7 @@
 
 All implementation lives in `lazy-emacs/` on branch `lazy-emacs-migration`. Original startup files, local helpers, credentials and databases were not edited/deleted. Planning inventories remain historical source descriptions. Topic commits separate source snapshots, core safety, GUI, application families and tests.
 
-Factory preferences were imported by reading—not evaluating—the old files. They are consolidated in defaults.el, then copied once to the ignored Customize-owned GUI file. The old cleartext news cancellation credential was copied only to ignored mode-0600 private.el; it is not committed or used in fixtures. Tests create their own state and Org documents, and never decrypt credentials.
+Factory preferences were imported by reading—not evaluating—the old files. They live in the ignored Customize-owned GUI file, which is the only settings file; there is no separate template. The old cleartext news cancellation credential was copied only to ignored mode-0600 private.el; it is not committed or used in fixtures. Tests create their own state and Org documents, and never decrypt credentials.
 
 ## Explicit decisions made while questions were deferred
 
