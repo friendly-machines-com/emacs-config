@@ -9,22 +9,19 @@
 (defvar lc--deleting-frame nil)
 (defvar lc--closing-frames (make-hash-table :test #'eq :weakness 'key))
 (defun lc-frame-buffers (frame)
-  "Live buffers currently associated with FRAME, including tab-line tabs.
-Only the frame's present contents are considered. Do NOT fold in
-`lc-work-buffers' or the frame's own `buffer-list' parameter: both are
-cumulative history, so re-reading them on every window switch made the
-set grow without bound and treated buffers abandoned long ago as live
-work to save on close. `window-prev-buffers'/`window-next-buffers' are
-still included, since that is how a tab-line tab that currently has no
-window of its own is found."
+  "Live buffers actually associated with FRAME, including hidden tab history."
   (delete-dups
    (cl-remove-if-not
     #'buffer-live-p
-    (cl-mapcan (lambda (window)
-                 (cons (window-buffer window)
-                       (append (mapcar #'car (window-prev-buffers window))
-                               (window-next-buffers window))))
-               (window-list frame 'no-minibuffer)))))
+    (append (frame-parameter frame 'lc-work-buffers)
+            ;; This parameter is the frame's own history; buffer-list FRAME
+            ;; additionally appends every other daemon buffer and is NOT used.
+            (frame-parameter frame 'buffer-list)
+            (cl-mapcan (lambda (window)
+                         (cons (window-buffer window)
+                               (append (mapcar #'car (window-prev-buffers window))
+                                       (window-next-buffers window))))
+                       (window-list frame 'no-minibuffer))))))
 (defun lc-track-frame (frame)
   (when (and (frame-live-p frame) (not (frame-initial-p frame))
              (not (frame-parent frame)))
