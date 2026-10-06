@@ -153,8 +153,8 @@ properties such as a buffer-state :enable expression."
               ;; rather than inheriting this face's own unset value.
               (set-face-attribute face frame :foreground (face-foreground 'default)))))
         (spacious-padding-mode 1))
-      (when (require 'ultra-scroll nil t) (ultra-scroll-mode 1))
-      (when (require 'bar-cursor nil t) (bar-cursor-mode 1)))))
+      (when (require 'ultra-scroll nil t) (ultra-scroll-mode 1)))))
+
 (defun lc-start-ui ()
   (require 'tab-line) (require 'tool-bar) (require 'window-tool-bar)
   (add-to-list 'image-load-path (lc-file "assets/icons"))
@@ -175,6 +175,14 @@ properties such as a buffer-state :enable expression."
                                 '((format-control . empty-box) (no-font . empty-box)))
   (load-theme 'solarized t)
   (add-hook 'after-make-frame-functions #'lc-graphic-ui)
+  ;; Enable once at init, before any client frame exists (the old config did
+  ;; this from custom.el). bar-cursor-mode only sets the cursor on ONE frame
+  ;; per call and relies on its own after-make-frame-functions hook for future
+  ;; frames; the previous per-frame enable in lc-graphic-ui installed that hook
+  ;; too late for the first frame, silently skipped when the soft require
+  ;; failed, and re-enabled the mode after a deliberate toggle-off.
+  (require 'bar-cursor)
+  (bar-cursor-mode 1)
   (when (require 'popper nil t) (popper-mode 1) (popper-echo-mode 1))
   (unbreak)
   (dolist (id '(rgrep ede semantic directory-search simple-calculator games))
