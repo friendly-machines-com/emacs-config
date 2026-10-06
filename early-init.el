@@ -64,7 +64,7 @@
         (list "/home/dannym/src/loki/loki-acp")))
 
 (setq debug-on-quit t)
-(profiler-start 'cpu)
+;(profiler-start 'cpu)
 
 (setq local-icon-directory (expand-file-name "~/.emacs.d/icons"))
 
