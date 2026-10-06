@@ -34,7 +34,6 @@ Use your existing Guix Home/profile only if its actual Emacs executable is 31.1+
 - `user-lisp/`: maintained local commands/adapters.
 - `vendor/`: isolated matching source snapshots (especially your custom Org preview).
 - `gui-settings.el`: the only settings file; **Emacs Customize owns it**.
-- `private.el`: local-only migrated news credential; ignored by Git, never included in tests.
 - `state/`, `cache/`: independent runtime/generated files, ignored by Git.
 
 Start with `M-x customize-group RET lazy-config`, plus native package groups and `customize-face`. In particular `lc-global-actions` / `lc-mode-actions` control toolbar contents. Tabs and actions share the existing tab line: there is no extra toolbar row. Missing-command generation (`unbreak`) is enabled; its menu is rebuilt when package/mode context changes, without eagerly loading every command implementation.
