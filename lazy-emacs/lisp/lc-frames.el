@@ -39,7 +39,11 @@
                            (equal (buffer-name) "*scratch*"))))))))
 (defun lc-unsaved-work (buffers) (cl-remove-if-not #'lc-user-work-p buffers))
 (defun lc-save-frame-work (buffers)
-  "Save the explicit BUFFERS set. Cancellation/errors escape and keep the frame."
+  "Save or discard BUFFERS, then let the frame close either way.
+Answering no used to raise `user-error', which aborted the whole close and
+left the frame stuck open with no way out: *scratch* has no file to write
+to, so declining could never be honoured. Discarding restores the buffer
+and closes it, which is what answering no means."
   (dolist (buffer (lc-unsaved-work buffers))
     (with-current-buffer buffer
       (if buffer-file-name
@@ -47,7 +51,8 @@
         (pop-to-buffer-same-window buffer)
         (if (yes-or-no-p (format "Save unsaved buffer %s before closing? " (buffer-name)))
             (call-interactively #'write-file)
-          (user-error "Frame kept open: unsaved buffer %s" (buffer-name)))))))
+          (set-buffer-modified-p nil)
+          (message "Discarded unsaved buffer %s" (buffer-name)))))))
 (define-derived-mode lc-unsaved-review-mode tabulated-list-mode "Unsaved work"
   "Review orphaned edits before closing the final GUI. RET visits a buffer."
   (setq tabulated-list-format [("Buffer" 32 t) ("File / draft" 60 t)]
