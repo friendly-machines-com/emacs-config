@@ -114,7 +114,7 @@ properties such as a buffer-state :enable expression."
   :bind (("C-`" . popper-toggle) ("M-`" . popper-cycle) ("C-M-`" . popper-toggle-type))
   :init
   (setq popper-reference-buffers '("\\*Messages\\*" "Output\\*$" "\\*Async Shell Command\\*"
-                                   help-mode compilation-mode "\\*eshell.*\\*" eshell-mode
+                                   help-mode compilation-mode
                                    "\\*shell.*\\*" shell-mode term-mode vterm-mode)))
 (use-package solarized-theme :ensure nil :defer t)
 (autoload 'modern-fringes-mode "modern-fringes" nil t)
