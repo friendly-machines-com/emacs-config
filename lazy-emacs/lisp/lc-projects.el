@@ -11,7 +11,7 @@
 ;; Core lookup must not follow HOME mutations in project process-environment.
 (unless (advice-member-p #'lc-global-env-call 'locate-user-emacs-file)
   (advice-add 'locate-user-emacs-file :around #'lc-global-env-call))
-;; Keep REPL commands as program names (see defaults.el), so ordinary process
+;; Keep REPL commands as program names (see gui-settings.el), so ordinary process
 ;; lookup uses the current buffer's exec-path/environment at launch time. Do not
 ;; freeze them to a previous environment's absolute executable, overwrite user
 ;; choices after an update, or patch envrc internals (0.15 has no update hook).
