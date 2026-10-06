@@ -28,7 +28,6 @@
   (require module))
 ;; gui-settings.el is the only settings file, and GUI set/save/reset owns it.
 (load custom-file nil t)
-(load (lc-file "private.el") t t)
 ;; The user explicitly requested these services at startup, not on first use.
 (lc-start-ui)
 (lc-start-completion)
