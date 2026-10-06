@@ -4,6 +4,13 @@
   ;; Supports explicit batch -Q loads too; normal --init-directory uses early-init.
   (load (expand-file-name "early-init.el" (file-name-directory load-file-name)) nil t))
 (require 'lc-core)
+;; Why: global-git-commit-mode is enabled by loading git-commit, and that is
+;; also what hooks git-commit-setup to find-file-hook. Without this library
+;; nothing loads it -- the docs say it is deliberately NOT autoloaded, and
+;; Magit only pulls it in for its own commit buffers. So `git commit` over
+;; emacsclient opened .git/COMMIT_EDITMSG in fundamental-mode with no
+;; git-commit-mode, and C-c C-c (and wakib's C-d C-c) were simply unbound.
+(require 'git-commit)
 (require 'use-package)
 (setq use-package-always-ensure nil use-package-always-defer t)
 (dolist (dir '("vendor/wakib-keys" "vendor/ssass-mode" "vendor/elfeed-tube"))
