@@ -10,12 +10,13 @@
 (defvar lc--closing-frames (make-hash-table :test #'eq :weakness 'key))
 (defun lc-frame-buffers (frame)
   "Live buffers currently associated with FRAME, including tab-line tabs.
-Only the frame's present contents are considered. The frame's own
-`buffer-list' parameter is deliberately NOT used: it is cumulative
-history, so it treated buffers abandoned long ago as live work to save
-on close. `window-prev-buffers'/`window-next-buffers' are still
-included, since that is how a tab-line tab that currently has no window
-of its own is found."
+Only the frame's present contents are considered. Do NOT fold in
+`lc-work-buffers' or the frame's own `buffer-list' parameter: both are
+cumulative history, so re-reading them on every window switch made the
+set grow without bound and treated buffers abandoned long ago as live
+work to save on close. `window-prev-buffers'/`window-next-buffers' are
+still included, since that is how a tab-line tab that currently has no
+window of its own is found."
   (delete-dups
    (cl-remove-if-not
     #'buffer-live-p
@@ -24,6 +25,10 @@ of its own is found."
                        (append (mapcar #'car (window-prev-buffers window))
                                (window-next-buffers window))))
                (window-list frame 'no-minibuffer)))))
+(defun lc-track-frame (frame)
+  (when (and (frame-live-p frame) (not (frame-initial-p frame))
+             (not (frame-parent frame)))
+    (set-frame-parameter frame 'lc-work-buffers (lc-frame-buffers frame))))
 (defun lc-user-work-p (buffer)
   "Whether BUFFER contains modified user work, not ordinary process/log output."
   (and (buffer-live-p buffer)
@@ -74,6 +79,7 @@ of its own is found."
     (unwind-protect
         (condition-case err
             (with-selected-frame frame
+              (lc-track-frame frame)
               (when lc-save-on-frame-close (lc-save-frame-work (lc-frame-buffers frame)))
               (let ((remaining (lc-unsaved-work (lc-frame-buffers frame)))
                     (orphans (and lc-protect-last-frame
@@ -110,6 +116,8 @@ of its own is found."
         (funcall function frame force)
       (lc-request-frame-close frame))))
 (defun lc-install-frame-policy ()
+  (add-hook 'window-buffer-change-functions #'lc-track-frame)
+  (add-hook 'after-make-frame-functions #'lc-track-frame)
   (unless (advice-member-p #'lc-delete-frame-advice 'delete-frame)
     (advice-add 'delete-frame :around #'lc-delete-frame-advice))
   (when (daemonp) (define-key special-event-map [delete-frame] #'lc-handle-delete-frame)))
