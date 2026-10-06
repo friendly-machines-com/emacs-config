@@ -397,7 +397,7 @@
  '(scroll-margin 0)
  '(scroll-preserve-screen-position nil)
  '(solarized-contrast 'normal)
- '(spacious-padding-subtle-frame-lines nil) ; must stay nil: see below
+ '(spacious-padding-subtle-frame-lines t) ; must stay nil: see below
  '(spacious-padding-subtle-mode-line t)
  '(spacious-padding-widths
  '(:internal-border-width 0 :header-line-width 4 :mode-line-width 6

@@ -20,9 +20,6 @@
   (copy-file (lc-file "defaults.el") custom-file)
   (set-file-modes custom-file #o600))
 (load custom-file nil t)
-;; Late-loaded packages need their saved settings re-applied; this is the native
-;; mechanism, and it also handles defcustoms whose setters have already run.
-(add-hook 'after-load-functions #'custom-apply-custom)
 (load (lc-file "private.el") t t)
 ;; The user explicitly requested these services at startup, not on first use.
 (lc-start-ui)

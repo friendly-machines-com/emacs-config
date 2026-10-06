@@ -125,15 +125,33 @@ properties such as a buffer-state :enable expression."
              (not (frame-initial-p frame)) (not (frame-parent frame)))
     (with-selected-frame frame
       (when (require 'spacious-padding nil t)
-        ;; Emacs 31 introduced faces older themes leave inheriting. Padding needs
-        ;; actual colors, not the raw symbol `unspecified', for line/box specs.
-        ;; spacious-padding 0.9.0 additionally falls back to `default''s foreground
-        ;; when it draws the subtle underline, and on a headless daemon that is
-        ;; `unspecified', which xfaces.c rejects, failing every later frame. Give
-        ;; `default' a concrete color here so no padding code path can emit one.
+        ;; Why: a daemon has no window system, so `default''s foreground and the
+        ;; frame's background-color/foreground-color are all "unspecified-fg".
+        ;; spacious-padding 0.9.0, `spacious-padding--face-attribute', tries to
+        ;; paper over exactly this (its own comment names "running Emacs as a
+        ;; daemon, connecting via emacsclient"), but its fallbacks are the frame
+        ;; colors and then `background-mode' -- and `background-mode' is nil
+        ;; until a real frame exists. Every clause then fails and it returns nil.
+        ;;
+        ;; That nil reaches `spacious-padding-set-face-box-padding', which builds
+        ;; (:underline (:color (or ... (spacious-padding--face-foreground 'default))
+        ;;                    :position t)). xfaces.c rejects :color unspecified,
+        ;; so `make-frame' aborts, `server.el' swallows the error and answers
+        ;; -window-system-unsupported, and `emacsclient -c' exits 0 with no
+        ;; window. Giving `default' a real color makes the FIRST clause of
+        ;; --face-attribute succeed, so no padding code path can emit nil.
+        ;;
+        ;; Do NOT "fix" this by setting spacious-padding-subtle-frame-lines to
+        ;; nil: that only disables the feature. The bug is an unresolvable face.
+        ;; Do NOT set the foreground from the face's own current value either --
+        ;; on a daemon that value is the bogus "unspecified-fg" string.
         (dolist (face '(default header-line-inactive mode-line-active mode-line-inactive))
-          (unless (stringp (face-attribute face :foreground frame))
-            (set-face-attribute face frame :foreground (face-foreground face frame t))))
+          (let ((current (face-attribute face :foreground frame)))
+            (unless (and (stringp current)
+                         (not (member current '("unspecified-fg" "unspecified-bg"))))
+              ;; Resolve against `default', which themes do give a real color,
+              ;; rather than inheriting this face's own unset value.
+              (set-face-attribute face frame :foreground (face-foreground 'default)))))
         (spacious-padding-mode 1))
       (when (require 'ultra-scroll nil t) (ultra-scroll-mode 1))
       (when (require 'bar-cursor nil t) (bar-cursor-mode 1)))))
