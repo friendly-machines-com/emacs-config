@@ -11,6 +11,10 @@
 ;; emacsclient opened .git/COMMIT_EDITMSG in fundamental-mode with no
 ;; git-commit-mode, and C-c C-c (and wakib's C-d C-c) were simply unbound.
 (require 'git-commit)
+;; Why: lc-projects.el registers git-rebase-* actions for git-rebase-mode. Like
+;; git-commit, git-rebase.el ships no autoloads and nothing else loads it, so
+;; every one of those actions was unbound.
+(require 'git-rebase)
 (require 'use-package)
 (setq use-package-always-ensure nil use-package-always-defer t)
 (dolist (dir '("vendor/wakib-keys" "vendor/ssass-mode" "vendor/elfeed-tube"))
