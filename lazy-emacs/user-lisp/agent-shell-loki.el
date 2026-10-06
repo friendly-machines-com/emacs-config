@@ -110,11 +110,11 @@ Requires loki-acp adapter for ACP integration."))
   (when (and (boundp 'agent-shell-loki-command) agent-shell-loki-command)
     (user-error "Please migrate to use agent-shell-loki-acp-command and eval (setq agent-shell-loki-command nil)"))
   ;; This adapter owns client construction. Use ACP's public constructor with
-  ;; an explicit Guix argv, rather than changing agent-shell's private factory.
-  ;; The public prefix option covers later agent-shell client shell commands too.
-  (setq agent-shell-text-file-capabilities nil
-        agent-shell-command-prefix #'lc-agent-command-prefix)
-  (let ((command (append (lc-agent-command-prefix buffer) agent-shell-loki-acp-command)))
+  ;; an explicit Guix argv. The container prefix is installed globally by
+  ;; early-init, which sets agent-shell-command-prefix.
+  (setq agent-shell-text-file-capabilities nil)
+  (let ((command (append (funcall agent-shell-command-prefix buffer)
+                         agent-shell-loki-acp-command)))
     (acp-make-client :command (car command)
                      :command-params (cdr command)
                      :environment-variables (append (my/loki-process-environment)
