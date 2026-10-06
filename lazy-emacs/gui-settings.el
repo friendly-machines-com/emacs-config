@@ -457,8 +457,6 @@
  '(org-mu4e-convert-to-html t)
  '(mm-verify-option 'known)
  '(gnus-select-method '(nntp "news.gmane.io" (nntp-open-connection-function lc-nntp-starttls) (nntp-port-number 119)))
- '(gnus-startup-file (lc-state-file "newsrc"))
- '(gnus-agent-directory (lc-state-file "gnus-agent/"))
  '(gnus-sum-thread-tree-indent " ")
  '(gnus-sum-thread-tree-root "")
  '(gnus-sum-thread-tree-false-root "")
