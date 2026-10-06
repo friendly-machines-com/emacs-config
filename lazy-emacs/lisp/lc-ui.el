@@ -175,7 +175,6 @@ properties such as a buffer-state :enable expression."
                                 '((format-control . empty-box) (no-font . empty-box)))
   (load-theme 'solarized t)
   (add-hook 'after-make-frame-functions #'lc-graphic-ui)
-  (dolist (frame (frame-list)) (lc-graphic-ui frame))
   (when (require 'popper nil t) (popper-mode 1) (popper-echo-mode 1))
   (unbreak)
   (dolist (id '(rgrep ede semantic directory-search simple-calculator games))
