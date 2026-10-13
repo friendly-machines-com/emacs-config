@@ -29,7 +29,7 @@
   "Distinct folder shortcut keys; Archive is authoritative."
   :type '(alist :key-type string :value-type character) :set #'lc-mail-setting-set :group 'lc-mail)
 (defcustom lc-mail-smtp-settings
-  '((smtpmail-smtp-server . "smtp.dreamhost.com") (smtpmail-stream-type . starttls)
+  '((smtpmail-smtp-server . "smtp.fastmail.com") (smtpmail-stream-type . starttls)
     (smtpmail-smtp-service . 587) (smtpmail-auth-supported . (plain login))
     (smtpmail-always-send-ehlo . t) (smtpmail-authenticate-always . t)
     (smtpmail-require-credentials . t))
