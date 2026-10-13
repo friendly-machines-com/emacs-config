@@ -303,26 +303,29 @@
  '(message-mail-user-agent t)
  '(message-signature-file (lc-home-file ".emacs.d/.signature"))
  '(mm-verify-option 'known)
+ '(mml-secure-openpgp-sign-with-sender t)
  '(mouse-autoselect-window t)
  '(mpv-start-timeout 0.5)
  '(mu4e-attachment-dir (lc-home-file "Downloads"))
  '(mu4e-bookmarks
    '((:query "flag:unread AND NOT flag:trashed" :name "Unread messages"
-             :key 117 :type bookmarks :count 213901 :unread 213901
-             :delta-count 0 :delta-unread 0 :maildir nil
+             :key 117 :type bookmarks :count 224699 :unread 224699
+             :delta-count 797 :delta-unread 797 :maildir nil
              :effective-query "flag:unread AND NOT flag:trashed")
      (:query "flag:unread" :name "New messages" :key 110 :type
-             bookmarks :count 213951 :unread 213951 :delta-count 0
-             :delta-unread 0 :maildir nil :effective-query
+             bookmarks :count 224699 :unread 224699 :delta-count 797
+             :delta-unread 797 :maildir nil :effective-query
              "flag:unread")
      (:query "date:today..now" :name "Today's messages" :key 116 :type
-             bookmarks :count 0 :unread 0 :delta-count 0 :delta-unread
-             0 :maildir nil :effective-query "date:today..now")
+             bookmarks :count 573 :unread 569 :delta-count 573
+             :delta-unread 569 :maildir nil :effective-query
+             "date:today..now")
      (:query "date:7d..now" :name "Last 7 days" :key 119 :type
-             bookmarks :count 0 :unread 0 :delta-count 0 :delta-unread
-             0 :maildir nil :effective-query "date:7d..now")
+             bookmarks :count 3074 :unread 2984 :delta-count 798
+             :delta-unread 793 :maildir nil :effective-query
+             "date:7d..now")
      (:query "mime:image/*" :name "Messages with images" :key 112
-             :type bookmarks :count 305 :unread 222 :delta-count 0
+             :type bookmarks :count 322 :unread 221 :delta-count 1
              :delta-unread 0 :maildir nil :effective-query
              "mime:image/*")))
  '(mu4e-change-filenames-when-moving t)
