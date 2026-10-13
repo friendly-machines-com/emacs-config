@@ -11,7 +11,7 @@
    "emacs-consult" "emacs-embark" "emacs-wgrep"
    "emacs-spacious-padding" "emacs-color-theme-solarized" "emacs-pulsar" "emacs-ultra-scroll"
    "emacs-bar-cursor" "emacs-popper" "emacs-nerd-icons"
-   "emacs-jinx" "emacs-yasnippet" "emacs-tempel" "emacs-smartparens"
+   "emacs-wakib-keys" "emacs-jinx" "emacs-yasnippet" "emacs-tempel" "emacs-smartparens"
    "emacs-rainbow-delimiters" "emacs-comment-tags" "emacs-outshine" "emacs-form-feed"
    "emacs-outline-indent" "emacs-indent-bars" "emacs-dtrt-indent" "emacs-format-all-the-code"
    "emacs-capf-autosuggest" "emacs-vlf" "emacs-eat"

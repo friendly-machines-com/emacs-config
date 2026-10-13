@@ -17,7 +17,7 @@
 (require 'git-rebase)
 (require 'use-package)
 (setq use-package-always-ensure nil use-package-always-defer t)
-(dolist (dir '("vendor/wakib-keys" "vendor/ssass-mode" "vendor/elfeed-tube"))
+(dolist (dir '("vendor/ssass-mode" "vendor/elfeed-tube"))
   (add-to-list 'load-path (lc-file dir)))
 (lc-setup-storage)
 (require 'lc-frames)
