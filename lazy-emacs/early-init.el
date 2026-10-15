@@ -166,7 +166,8 @@
 (require 'lc-security)
 (lc-install-security)
 ;; Modest, temporary tuning. Always restored, including after an init error.
-(defvar lc--normal-gc-threshold gc-cons-threshold)
+(defvar lc--normal-gc-threshold (* 16 1024 1024)
+  "Runtime GC threshold, not the temporarily raised startup value.")
 (setq gc-cons-threshold (* 64 1024 1024))
 (add-hook 'emacs-startup-hook
           (lambda () (setq gc-cons-threshold lc--normal-gc-threshold)) 90)
