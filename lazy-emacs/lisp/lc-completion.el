@@ -41,7 +41,7 @@
                     consult-bookmark consult-recent-file consult-xref
                     :preview-key '(:debounce .4 any)))
 (use-package embark :ensure nil :commands (embark-act embark-export))
-(use-package embark-consult :ensure nil :after (embark consult))
+(use-package embark-consult :ensure nil :after (embark consult) :demand t)
 (use-package wgrep :ensure nil :commands wgrep-change-to-wgrep-mode)
 (defun lc-edit-grep-results ()
   "Export Consult Ripgrep synchronously, then enable editing in the export buffer."
