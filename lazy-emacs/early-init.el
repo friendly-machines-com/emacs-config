@@ -15,11 +15,12 @@
 (defvar lc/guix-shell-extra-args
   (list "-C" "-N" "-W"
         "--expose=/usr/bin/env"
-        (concat "--share=" (expand-file-name "~/.config/loki"))
-        (concat "--share=" (expand-file-name "~/src/loki"))
-        "--share=/var/log/guix"
-        "--share=/var/guix"
-        "--share=/tmp"
+        (concat "--expose=" (expand-file-name "~/.config/loki"))
+        (concat "--share=" (expand-file-name "~/.config/loki/credentials"))
+        (concat "--share=" (expand-file-name "~/.local/state/loki"))
+        (concat "--expose=" (expand-file-name "~/src/loki"))
+        "--expose=/var/log/guix"
+        "--share=/var/guix" ; sigh
         "--preserve=_KEY$"
         "--preserve=_TOKEN$"
         "--preserve=_PAT$"
