@@ -48,12 +48,12 @@
   (let* ((manifest (lc--manifest))
          (agent (eq kind 'agent))
          (workspace (lc-workspace-root))
-         (working-directory (if agent (file-truename default-directory) workspace)))
+         (working-directory (if agent (file-truename default-directory) workspace))) ; FIXME
     (append (list "guix" "shell")
-            (if agent lc/guix-shell-extra-args '("coreutils"))
-            (list "--no-cwd" (concat "--share=" workspace)
+            lc/guix-shell-extra-args
+            (list "--no-cwd"
+                  (concat "--share=" workspace)
                   (concat "--cwd=" working-directory)
-                  "--symlink=/usr/bin/env=bin/env"
                   "-m" manifest "--"))))
 
 (defun lc-wrap-compilation (function command &rest args)
