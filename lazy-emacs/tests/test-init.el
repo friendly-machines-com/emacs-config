@@ -28,6 +28,13 @@
 (defvar lc-startup-features (copy-sequence features)
   "Exact post-init feature snapshot, before activation tests intentionally load apps.")
 (princ (format "INIT_SECONDS=%.3f\n" (float-time (time-subtract (current-time) lc-integration-start))))
+(ert-deftest lc-transient-frame-close-package-loaded ()
+  ;; The startup load-path optimization must not substitute bundled Transient
+  ;; for the patched Guix dependency selected by the manifest.
+  (should (featurep 'transient))
+  (should (fboundp 'transient--ensure-menu-window))
+  (should (string-match-p "/site-lisp/transient-"
+                          (symbol-file 'transient--ensure-menu-window 'defun))))
 (ert-deftest lc-original-solarized-implementation ()
   ;; The original package is color-theme-solarized. The unrelated solarized-theme
   ;; package shares a library filename but has different theme names/settings.
