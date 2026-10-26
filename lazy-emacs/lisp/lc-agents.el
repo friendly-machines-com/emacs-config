@@ -8,6 +8,18 @@
   (require 'agent-shell-org-math)
   (add-to-list 'agent-shell-agent-configs #'agent-shell-loki-make-agent-config)
   (add-hook 'agent-shell-mode-hook #'agent-shell-org-math-mode)
+  ;; mixed-pitch remaps `default' to variable-pitch and only faces listed in
+  ;; `mixed-pitch-fixed-pitch-faces' to fixed-pitch.  Agent-shell lays out
+  ;; tables by measuring cell widths in pixels and padding columns to those
+  ;; measurements, so a proportional table font makes columns and borders
+  ;; drift and the pipes no longer line up.  `agent-shell-markdown-table' is
+  ;; the base face for every table character (header, border and zebra faces
+  ;; inherit it), and unlike inline code and source blocks it has no
+  ;; org-code/org-block parent that mixed-pitch already pins.  List it before
+  ;; enabling the mode so each shell buffer's face remapping includes it.
+  (require 'mixed-pitch)
+  (add-to-list 'mixed-pitch-fixed-pitch-faces 'agent-shell-markdown-table)
+  (add-hook 'agent-shell-mode-hook #'mixed-pitch-mode)
   (easy-menu-define lc-agent-menu agent-shell-mode-map "Agent controls"
     '("Agent"
       ["Stop current turn/jobs" agent-shell-interrupt t]
