@@ -49,7 +49,7 @@
                 (mu4e-sent-messages-behavior . sent)
                 (message-send-mail-function . friendly-machines-deliver-to-maildir)
                 (send-mail-function . friendly-machines-deliver-to-maildir)
-                (smtpmail-smtp-server . "smtp.dreamhost.com")
+                (smtpmail-smtp-server . "smtp.fastmail.com")
                 (smtpmail-stream-type . starttls)
                 (smtpmail-smtp-user . "dannym@friendly-machines.com")
                 (smtpmail-smtp-service . 587)
