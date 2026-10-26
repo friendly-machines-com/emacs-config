@@ -162,13 +162,34 @@
 (add-to-list 'load-path (expand-file-name "user-lisp" lc-config-root))
 ;; Matching local Org modules must win over both the built-in and Guix Org.
 (add-to-list 'load-path (expand-file-name "vendor/org/lisp" lc-config-root))
-;; Compile local Org before configuration/services load it. ARG=0 includes
-;; missing .elc files; without FORCE, unchanged files are skipped. Measured
-;; Org + agenda loading fell from 1.49s to 0.43s; an unchanged check took 0.10s.
-;; The first run compiles everything (~7.55s). Shared macro changes may require
-;; a manual forced rebuild because this check tracks timestamps, not dependencies.
-(require 'bytecomp)
-(byte-recompile-directory (expand-file-name "vendor/org/lisp" lc-config-root) 0)
+;; Compile local Org before configuration/services load it.  Measured Org +
+;; agenda loading fell from 1.49s to 0.43s.  `byte-recompile-directory' visits
+;; every source file (find-file + mode hooks), which costs ~0.12G retired
+;; instructions per start for 131 files.  Check timestamps first and only scan
+;; when a compilable .el is newer than its .elc or lacks one.  Files that opt
+;; out with `no-byte-compile: t' (org-version.el, org-loaddefs.el) are ignored
+;; by reading only their last 2 kB.  This still tracks timestamps, not macro
+;; dependencies; a shared macro change needs a manual forced rebuild.
+(defun lc-org-file-stale-p (file)
+  "Non-nil when FILE should be (re)compiled."
+  (let ((elc (concat file "c")))
+    (cond ((file-exists-p elc) (file-newer-than-file-p file elc))
+          (t
+           (let* ((attributes (file-attributes file))
+                  (size (or (nth 7 attributes) 0)))
+             (with-temp-buffer
+               (insert-file-contents file nil (max 0 (- size 2000)) nil)
+               (not (re-search-forward "no-byte-compile:[ \t]*t" nil t))))))))
+(let* ((org-dir (expand-file-name "vendor/org/lisp" lc-config-root))
+       (stale
+        (catch 'stale
+          (dolist (file (directory-files org-dir t "\\.el\\'"))
+            (when (lc-org-file-stale-p file)
+              (throw 'stale t)))
+          nil)))
+  (when stale
+    (require 'bytecomp)
+    (byte-recompile-directory org-dir 0)))
 (setq agent-shell-text-file-capabilities nil)
 (require 'lc-core)
 (require 'lc-security)
