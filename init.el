@@ -152,7 +152,8 @@
  '(frame-background-mode 'light)
  '(grep-command "rg -nS --no-heading ")
  '(ignored-local-variable-values
-   '((eval with-eval-after-load 'git-commit
+   '((gac-debounce-interval . 5) (gac-automatically-push-p . t)
+     (eval with-eval-after-load 'git-commit
            (add-to-list 'git-commit-trailers "Change-Id"))
      (eval progn (require 'lisp-mode)
            (defun emacs27-lisp-fill-paragraph (&optional justify)
