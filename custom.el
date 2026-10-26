@@ -3666,3 +3666,133 @@ FILETAGS."
 ;          #'my-abort-minibuffer-after-last-frame)
 
 ;;; End minibuffer emacs hang avoidance
+
+
+(use-package agent-shell
+  :config
+  ;;; I think list-processes as a general emacs thing is enough--but maybe sometimes I want to kill the SPECIFIC tool call.
+  (defun my-agent-shell-kill-process-at-point ()
+  "Kill only the terminal subprocess at point without aborting the entire agent turn."
+  (interactive)
+  (let ((proc (get-text-property (point) 'agent-shell-process)))
+    (if (and proc (process-live-p proc))
+        (progn
+          (delete-process proc)
+          (message "Killed subprocess: %s" (process-name proc)))
+      ;; Fallback: check if the buffer or child has an active process
+      (let ((subprocs (seq-filter (lambda (p)
+                                    (string-prefix-p "agent-shell" (process-name p)))
+                                  (process-list))))
+        (if subprocs
+            (let ((chosen (completing-read "Kill subprocess: "
+                                           (mapcar #'process-name subprocs))))
+              (delete-process chosen)
+              (message "Killed %s" chosen))
+          (user-error "No running tool subprocess found to kill"))))))
+
+  ;; ---------------------------------------------------------------------------
+  ;; 1. Menu Bar: Comprehensive discoverability for agent-shell
+  ;; ---------------------------------------------------------------------------
+  (easy-menu-define agent-shell-mode-menu agent-shell-mode-map
+    "Menu for `agent-shell-mode'."
+    '("Agent"
+      ["Stop / Cancel Current Turn/Job" agent-shell-interrupt
+       :help "Cancel active agent turn and kill running child tool calls"]
+
+      ["Kill Subprocess at Point" my-agent-shell-kill-process-at-point
+       :help "Kill only the subprocess at point"]
+      ["Jump to Pending Permission/Action" agent-shell-jump-to-latest-permission-button-row
+       :help "Jump point directly to buttons awaiting tool execution approval"]
+      "---"
+      ("Tool Call Navigation"
+       ["Next Tool Call Block" agent-shell-ui-forward-block
+        :help "Move forward to the next tool execution fragment"]
+       ["Previous Tool Call Block" agent-shell-ui-backward-block
+        :help "Move backward to the previous tool execution fragment"])
+      "---"
+      ("Session & Process Management"
+       ["Switch Agent Session..." agent-shell-switch-buffer
+        :help "Switch to another running agent-shell buffer"]
+       ["Start New Agent Session..." agent-shell
+        :help "Start a new agent shell instance"]
+       ["List All Processes..." list-processes
+        :help "Open Emacs process table to inspect ACP/tool subprocesses"])
+      "---"
+      ["Clear Shell Buffer" agent-shell-clear-buffer
+       :help "Clear agent transcript history in this buffer"]))
+
+  ;; ---------------------------------------------------------------------------
+  ;; 2. Tool Bar: Quick-action buttons with standard Emacs icons
+  ;; ---------------------------------------------------------------------------
+  (defvar agent-shell-mode-tool-bar-map
+    (let ((map (make-sparse-keymap)))
+      ;; Stop/Cancel running turn or child jobs (uses stock "cancel" or "stop" icon)
+      (tool-bar-local-item
+       "cancel"
+       'agent-shell-interrupt
+       'agent-shell-interrupt
+       map
+       :label "Stop ALL"
+       :help "Cancel current turn and terminate running jobs (C-c C-c)")
+
+      ;; Stop ONE tool call at point
+      (tool-bar-local-item
+       "delete"                                ; Stock icon name (etc/images/delete.*)
+       'my-agent-shell-kill-process-at-point   ; Interactive function to call
+       'my-agent-shell-kill-process-at-point   ; Unique item identifier
+       map                                     ; Target keymap (e.g. agent-shell-mode-tool-bar-map)
+       :label "Kill Process"
+       :help "Kill only the subprocess at point (keeps agent turn running)")
+ 
+      ;; Jump directly to permission confirmation buttons (e.g. approving bash/diffs)
+      (tool-bar-local-item
+       "jump-to"
+       'agent-shell-jump-to-latest-permission-button-row
+       'agent-shell-jump-to-latest-permission-button-row
+       map
+       :label "Pending Action"
+       :help "Jump to active tool permission prompt")
+
+      ;; Step backward through tool call blocks
+      (tool-bar-local-item
+       "up-arrow"
+       'agent-shell-ui-backward-block
+       'agent-shell-ui-backward-block
+       map
+       :label "Prev Tool"
+       :help "Jump to previous tool call fragment")
+
+      ;; Step forward through tool call blocks
+      (tool-bar-local-item
+       "down-arrow"
+       'agent-shell-ui-forward-block
+       'agent-shell-ui-forward-block
+       map
+       :label "Next Tool"
+       :help "Jump to next tool call fragment")
+
+      ;; Switch between agent sessions
+      (tool-bar-local-item
+       "refresh"
+       'agent-shell-switch-buffer
+       'agent-shell-switch-buffer
+       map
+       :label "Switch Agent"
+       :help "Switch between running agent-shell buffers")
+
+      ;; Start a new agent session
+      (tool-bar-local-item
+       "new"
+       'agent-shell
+       'agent-shell
+       map
+       :label "New Agent"
+       :help "Spawn a new agent-shell session")
+
+      map))
+
+  (defun my-agent-shell-setup-toolbar ()
+    "Set up the toolbar for `agent-shell-mode'."
+    (setq-local tool-bar-map agent-shell-mode-tool-bar-map))
+
+  (add-hook 'agent-shell-mode-hook #'my-agent-shell-setup-toolbar))
