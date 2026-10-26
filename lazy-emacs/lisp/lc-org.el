@@ -58,6 +58,15 @@ ob-jupyter registers the installed kernels' further language aliases itself."
   :bind (("C-c m" . org-store-link) ("C-c a" . org-agenda) ("C-c c" . org-capture))
   :config
   (require 'lc-org-data)
+  ;; Precompiling the LaTeX preamble is pdflatex-only.  Measured on a
+  ;; 10-fragment buffer: fresh compile ~0.19 s, precompiled body ~0.11 s,
+  ;; building the .fmt ~0.29 s.  Saving ~0.08 s per compile, so break-even is
+  ;; ~4 compiles; a one-shot preview is slower with precompile.  The .fmt is
+  ;; cached by org-persist across buffers and sessions.  lualatex does not
+  ;; support this path (Org warns and disables it locally), and this config
+  ;; uses lualatex, so disable it explicitly.
+  (with-eval-after-load 'org-latex-preview
+    (setq org-latex-preview-process-precompile nil))
   (add-hook 'org-mode-hook #'lc-org-setup)
   (add-hook 'window-buffer-change-functions #'lc-org-preview-display)
   (lc-register-babel-autoloads)
