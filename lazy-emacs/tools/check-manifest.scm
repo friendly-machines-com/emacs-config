@@ -1,16 +1,13 @@
 ;; Run: guix repl lazy-emacs/tools/check-manifest.scm
-(use-modules (gnu packages) (ice-9 match))
-(define specs
-  (call-with-input-file "lazy-emacs/manifest.scm"
-    (lambda (port)
-      (let loop ()
-        (match (read port)
-          ((? eof-object?) '())
-          (('specifications->manifest ('quote names)) names)
-          (_ (loop)))))))
+(use-modules (guix profiles))
+;; Evaluate the real manifest, including its recursive package transformation;
+;; scanning for a quoted specifications->manifest list would silently check
+;; nothing once the manifest contains a package-level patch.
+(define manifest
+  (load (string-append (dirname (current-filename)) "/../manifest.scm")))
+(unless (manifest? manifest)
+  (error "manifest.scm did not return a Guix manifest"))
 (for-each
- (lambda (spec)
-   (catch 'quit
-     (lambda () (specification->package spec) (format #t "OK ~a~%" spec))
-     (lambda args (format #t "MISSING ~a~%" spec))))
- specs)
+ (lambda (entry)
+   (format #t "OK ~a ~a~%" (manifest-entry-name entry) (manifest-entry-version entry)))
+ (manifest-entries manifest))

@@ -1,6 +1,17 @@
 ;; Guix owns packages; local modified Org/Wakib/Elfeed Tube sources take precedence.
-(use-modules (guix profiles))
-(specifications->manifest
+(use-modules (gnu packages) (guix profiles) (guix transformations))
+
+;; Patch Transient itself, including dependencies of Magit/agent-shell, rather
+;; than advising its internals or overriding cursor keys in the Emacs config.
+(define transient-frame-close-fix
+  (options->transformation
+   `((with-patch . ,(string-append
+                     "emacs-transient=" (dirname (current-filename))
+                     "/patches/emacs-transient-menu-redisplay.patch")))))
+
+(packages->manifest
+ (map (lambda (spec)
+        (transient-frame-close-fix (specification->package spec)))
  '("emacs-pgtk" "mu" "font-dejavu" "maxima"
    "emacs-org-notify" "emacs-org-node" "emacs-org-mem" "emacs-org-modern"
    "emacs-org-modern-indent" "emacs-org-contrib" "emacs-org-super-agenda"
@@ -28,4 +39,4 @@
    "emacs-trashed" "emacs-osm" "emacs-wttrin" "emacs-debbugs"
    "emacs-emms" "emacs-org-emms" "emacs-mediainfo-mode" "emacs-elfeed" "emacs-mpv"
    "emacs-request" "emacs-el-job"
-   "git" "ripgrep" "python" "aspell-dict-en" "aspell-dict-de"))
+   "git" "ripgrep" "python" "aspell-dict-en" "aspell-dict-de")))
