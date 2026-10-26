@@ -136,7 +136,14 @@
   (add-hook 'vhdl-mode-hook #'lc-vhdl-formatting-setup 90)
   (add-hook 'vhdl-ts-mode-hook #'lc-vhdl-formatting-setup 90)
   (require 'uniquify) (setq uniquify-buffer-name-style 'forward)
-  (save-place-mode 1) (recentf-mode 1)
+  (save-place-mode 1)
+  ;; recentf-mode loads its list synchronously; the expensive part is the
+  ;; cleanup that stats every entry.  Keep the mode eager but let recentf's
+  ;; own idle timer do the cleanup instead of the default `mode' (cleanup at
+  ;; enable time, i.e. during startup).
+  (require 'recentf)
+  (customize-set-variable 'recentf-auto-cleanup 60)
+  (recentf-mode 1)
   ;; VLF setup installs the large-file entry advice, not the VLF UI itself.
   (when (require 'vlf-setup nil t))
   (dolist (area '(mode-line left-margin left-fringe right-fringe header-line
