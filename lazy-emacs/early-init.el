@@ -135,6 +135,12 @@
 (setq user-emacs-directory lc-config-root
       package-enable-at-startup nil
       user-lisp-auto-scrape nil)
+;; Remember Guix's Transient (including its frame-close patch) before the
+;; built-in-first sorting below.  Pinning its directory lets Magit/Forge load
+;; it on demand instead of requiring it during every startup.
+(defvar lc-transient-directory
+  (let ((library (locate-library "transient")))
+    (and library (file-name-directory library))))
 ;; Guix puts many package directories ahead of Emacs's own Lisp directories.
 ;; Searching those for every built-in dependency made gnus-sum take 1.18s;
 ;; searching built-ins first reduced it to 0.16s in the same environment.
@@ -150,6 +156,8 @@
         (push directory builtin-path)
       (push directory package-path)))
   (setq load-path (append (nreverse builtin-path) (nreverse package-path))))
+(when lc-transient-directory
+  (add-to-list 'load-path lc-transient-directory))
 (add-to-list 'load-path (expand-file-name "lisp" lc-config-root))
 (add-to-list 'load-path (expand-file-name "user-lisp" lc-config-root))
 ;; Matching local Org modules must win over both the built-in and Guix Org.
