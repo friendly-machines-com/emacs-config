@@ -28,9 +28,17 @@
     (set-buffer-modified-p nil) (kill-buffer (current-buffer))))
 (defun lc-other-window-mru ()
   (interactive) (select-window (get-mru-window nil nil t)))
+(defun lc-prog-extras-p ()
+  "Whether this buffer should load optional programming tooling.
+`lisp-interaction-mode' (the startup *scratch* buffer) inherits
+`prog-mode-hook' and `emacs-lisp-mode-hook', so without this check the
+initial buffer eagerly loads format-all, dtrt-indent, Outshine and
+Smartparens before the first frame is drawn."
+  (not (eq major-mode 'lisp-interaction-mode)))
 (defun lc-formatting-setup ()
   "One generic format-on-save path; VHDL uses its native beautifier."
-  (unless (derived-mode-p 'vhdl-mode 'vhdl-ts-mode)
+  (when (and (lc-prog-extras-p)
+             (not (derived-mode-p 'vhdl-mode 'vhdl-ts-mode)))
     (when (require 'format-all nil t)
       (condition-case err
           (progn (format-all-ensure-formatter) (format-all-mode 1))
@@ -41,11 +49,17 @@
   (remove-hook 'before-save-hook #'format-all-buffer t)
   (add-hook 'before-save-hook #'vhdl-beautify-buffer nil t))
 (defun lc-detect-indentation ()
-  (when (and lc-indent-detection (require 'dtrt-indent nil t)) (dtrt-indent-mode 1)))
+  (when (and lc-indent-detection (lc-prog-extras-p)
+             (require 'dtrt-indent nil t))
+    (dtrt-indent-mode 1)))
 (defun lc-autoinsert ()
   (require 'autoinsert)
   (require 'lc-autoinsert-data)
   (let ((auto-insert 'other) (auto-insert-query nil)) (auto-insert)))
+(defun lc-smartparens-setup ()
+  (when (lc-prog-extras-p) (smartparens-mode 1)))
+(defun lc-outshine-setup ()
+  (when (lc-prog-extras-p) (outshine-mode 1)))
 (use-package jinx :ensure nil
   :hook ((text-mode prog-mode conf-mode) . jinx-mode)
   :bind (("M-$" . jinx-correct) ("C-M-$" . jinx-languages)))
@@ -61,11 +75,12 @@
     (when (file-directory-p directory)
       (add-to-list 'tempel-path (expand-file-name "*.eld" directory)))))
 (use-package smartparens-config :ensure nil :defer t)
-(use-package smartparens :ensure nil :hook ((scheme-mode emacs-lisp-mode) . smartparens-mode)
+(use-package smartparens :ensure nil
+  :hook (((scheme-mode emacs-lisp-mode) . lc-smartparens-setup))
   :config (require 'smartparens-config))
 (use-package rainbow-delimiters :ensure nil :hook (prog-mode . rainbow-delimiters-mode))
 (use-package comment-tags :ensure nil :hook (prog-mode . comment-tags-mode))
-(use-package outshine :ensure nil :hook (emacs-lisp-mode . outshine-mode))
+(use-package outshine :ensure nil :hook (emacs-lisp-mode . lc-outshine-setup))
 (use-package form-feed :ensure nil
   :hook ((prog-mode org-mode) . form-feed-mode))
 (use-package outline-indent :ensure nil :hook ((python-base-mode yaml-mode yaml-ts-mode) . outline-indent-minor-mode))
