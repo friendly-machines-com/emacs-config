@@ -558,6 +558,7 @@
 (slime-setup '(slime-fancy slime-quicklisp slime-asdf))
 
 (setq gc-cons-threshold (* 100 1024 1024))
+(setq gc-cons-percentage 0.1)
 (setq gcmh-high-cons-threshold (* 1024 1024 1024))
 (setq gcmh-idle-delay-factor 20)
 (setq jit-lock-defer-time 0.05)
