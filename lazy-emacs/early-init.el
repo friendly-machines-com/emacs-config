@@ -191,6 +191,7 @@
     (require 'bytecomp)
     (byte-recompile-directory org-dir 0)))
 (setq agent-shell-text-file-capabilities nil)
+(setq agent-shell-elicitation--experimental-feature-enabled t) ; before turn; advertises elicitation
 (require 'lc-core)
 (require 'lc-security)
 (lc-install-security)
