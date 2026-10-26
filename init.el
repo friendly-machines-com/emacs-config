@@ -131,7 +131,6 @@
       . "0b387290e9851813debd81b6e3aa5099f0f17fad1fade821ca1f0928262e56c4")
      ("/home/dannym/src/latex-ex/manifest.scm"
       . "5200b8ce405410acc7ad0e4baf5bfaa85b0160bff5815265a305bdc9a7fb70ed")))
- '(canlock-password "b8c588bfbd074250c3428c56f4581d597dbb93be")
  '(column-number-mode t)
  '(debbugs-browse-url-regexp
    "^https?://\\(debbugs\\.gnu\\.org\\|bugs\\.gnu\\.org\\|issues.guix.gnu.org\\)/\\(cgi/bugreport\\.cgi\\?bug=\\)?\\([[:digit:]]+\\)$")
