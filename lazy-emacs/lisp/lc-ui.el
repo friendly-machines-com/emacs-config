@@ -24,7 +24,7 @@
     (emms-browser-mode add-play)
     (emms-playlist-mode play rewind ffwd pause music-prev music-next stop)
     (mediainfo-mode media-play)
-    (agent-shell-mode agent-stop agent-kill agent-pending agent-prev agent-next agent-switch agent-new))
+    (agent-shell-mode agent-model agent-stop agent-kill agent-pending agent-prev agent-next agent-switch agent-new))
   "Per-mode action IDs, most specific mode first. Edit with Customize."
   :type '(alist :key-type symbol :value-type (repeat symbol))
   :set #'lc-toolbar-option-set :group 'lc-ui)
@@ -42,7 +42,7 @@ properties such as a buffer-state :enable expression."
       (_ (error "Invalid action record (expected ID LABEL COMMAND ICON): %S" specification)))))
 (defun lc-action-map (ids)
   (let ((map (make-sparse-keymap)))
-    (dolist (id (reverse ids))
+    (dolist (id ids)
       (when-let* ((action (gethash id lc-actions)))
         (let ((command (plist-get action :command)))
           (tool-bar-local-item (or (plist-get action :icon) "index") command id map
