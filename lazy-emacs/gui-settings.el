@@ -443,9 +443,10 @@
    '(("" "braket" t nil) ("" "esint" t nil) ("" "units" t nil)
      ("" "unicode-math" t nil)))
  '(org-latex-preview-appearance-options
-   '(:foreground default :background default :scale 2 :html-foreground
+   '(:foreground default :background default :scale 1 :html-foreground
                  "Black" :html-background "Transparent" :html-scale
-                 1.0 :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")))
+                 1.0 :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")
+                 :zoom 1.2))
  '(org-latex-preview-process-default 'dvisvgm)
  '(org-log-done 'time)
  '(org-mem-do-sync-with-org-id t)
