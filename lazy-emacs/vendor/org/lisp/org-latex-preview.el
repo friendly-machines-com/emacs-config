@@ -2298,6 +2298,17 @@ Returns a list of async tasks started."
          'org-latex-preview-process-finish-functions
          args))
 
+(defun org-latex-preview--source-buffer (extended-info)
+  "Return the live source buffer of preview job EXTENDED-INFO.
+Prefer a live fragment overlay's buffer.  Image-only jobs, which have no
+overlays, use the recorded :org-buffer."
+  (or (cl-loop for fragment in (plist-get extended-info :fragments)
+               for overlay = (plist-get fragment :overlay)
+               when (and (overlayp overlay) (overlay-buffer overlay))
+               return (overlay-buffer overlay))
+      (let ((source (plist-get extended-info :org-buffer)))
+        (and (buffer-live-p source) source))))
+
 (defun org-latex-preview--failure-callback (exit-code _buf extended-info)
   "Clear overlays corresponding to previews that failed to generate with EXIT-CODE.
 
@@ -2315,28 +2326,29 @@ previews."
                              (search-forward ": No such file or directory" nil t))))))
                (propertize org-latex-preview--latex-log 'face 'warning)
              (propertize org-latex-preview--image-log 'face 'warning)))
-  (with-current-buffer (plist-get extended-info :org-buffer)
-    (cl-loop for fragment in (plist-get extended-info :fragments)
-             for path = (plist-get fragment :path)
-             when (not path)
-             for ov = (plist-get fragment :overlay)
-             when ov do
-             ;; ;TODO: Other options here include:
-             ;; ;Fringe marker
-             ;; (overlay-put ov 'before-string
-             ;;              (propertize "!" 'display
-             ;;                          `(left-fringe exclamation-mark
-             ;;                            warning)))
-             ;; ;Special face
-             ;; (unless (overlay-get ov 'face)
-             ;;   (overlay-put ov 'face 'org-latex-preview-processing-face))
-             ;;
-             ;; ;Note: ov has buffer extended-info, no need to set current-buffer
-             (let ((start (overlay-start ov))
-                   (end (overlay-end ov)))
-               (delete-overlay ov)
-               (when org-latex-preview-mode
-                 (org-latex-preview--ensure-overlay start end))))))
+  (when-let* ((source (org-latex-preview--source-buffer extended-info)))
+    (with-current-buffer source
+      (cl-loop for fragment in (plist-get extended-info :fragments)
+               for path = (plist-get fragment :path)
+               when (not path)
+               for ov = (plist-get fragment :overlay)
+               when (and (overlayp ov) (eq (overlay-buffer ov) source)) do
+               ;; ;TODO: Other options here include:
+               ;; ;Fringe marker
+               ;; (overlay-put ov 'before-string
+               ;;              (propertize "!" 'display
+               ;;                          `(left-fringe exclamation-mark
+               ;;                            warning)))
+               ;; ;Special face
+               ;; (unless (overlay-get ov 'face)
+               ;;   (overlay-put ov 'face 'org-latex-preview-processing-face))
+               ;;
+               ;; Skip overlays deleted while their process was running.
+               (let ((start (overlay-start ov))
+                     (end (overlay-end ov)))
+                 (delete-overlay ov)
+                 (when org-latex-preview-mode
+                   (org-latex-preview--ensure-overlay start end)))))))
 
 (defvar-local org-latex-preview--preamble-content nil
   "Cache of the LaTeX preamble for snippet preview.")
@@ -2683,24 +2695,34 @@ The path of the created LaTeX file is returned."
 (defun org-latex-preview--check-all-fragments-produced (_exit-code _stdout extended-info)
   "Retry fragments for which image extraction produced no result.
 
-A fragment with neither `:path' nor `:error' was omitted by the image
-extraction process.  Retry that fragment and everything after it.  Do not
-mark the preceding successfully rendered fragment as erroneous: it has a
-valid image and is not evidence of the omission's cause."
-  (let ((fragments (copy-sequence (plist-get extended-info :fragments))))
-    ;; Skip the successfully produced prefix.  A fragment carrying `:error'
-    ;; was also accounted for by the converter and must not be retried here.
+A fragment with neither a :path nor error information was omitted by the
+image extraction process.  Retry that fragment and everything after it,
+in the live source buffer and with the original job settings.  Do not
+mark the preceding successfully rendered fragment as erroneous."
+  (let ((fragments (copy-sequence (plist-get extended-info :fragments)))
+        (source (org-latex-preview--source-buffer extended-info)))
+    ;; Skip fragments already accounted for by the converter.  Accept the
+    ;; legacy singular error property as well as the current :errors key.
     (while (and fragments
                 (or (plist-get (car fragments) :path)
+                    (plist-get (car fragments) :errors)
                     (plist-get (car fragments) :error)))
       (setq fragments (cdr fragments)))
-    (when fragments
-      (org-latex-preview--create-image-async
-       (plist-get extended-info :processor)
-       fragments
-       :latex-preamble (plist-get extended-info :latex-header)
-       :appearance-options (plist-get extended-info :appearance-options)
-       :place-preview-p (plist-get extended-info :place-preview-p)))))
+    (when (and fragments source)
+      (with-current-buffer source
+        (let ((org-latex-compiler (or (plist-get extended-info :latex-processor)
+                                      org-latex-compiler))
+              (org-latex-preview-cache
+               (if (plist-member extended-info :cache-location)
+                   (plist-get extended-info :cache-location)
+                 org-latex-preview-cache)))
+          (org-latex-preview--create-image-async
+           (plist-get extended-info :processor)
+           fragments
+           :latex-processor org-latex-compiler
+           :latex-preamble (plist-get extended-info :latex-header)
+           :appearance-options (plist-get extended-info :appearance-options)
+           :place-preview-p (plist-get extended-info :place-preview-p)))))))
 
 (defun org-latex-preview--display-info (extended-info fragment-info)
   "From FRAGMENT-INFO and EXTENDED-INFO obtain display-relevant information."

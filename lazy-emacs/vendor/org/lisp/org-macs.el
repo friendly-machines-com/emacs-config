@@ -569,38 +569,41 @@ unset.  Should the process have finished in any other manner,
      (org-async--cleanup-process process 'failed))))
 
 (defun org-async--cleanup-process (process &optional failed)
-  "Remove PROCESS from the async stack, and run its callback.
-If the exit code of PROCESS is zero and FAILED is non-nil, then
-the success callback is run (via `org-async--execute-callback').
-Otherwise, the failure callback is run."
-  (when (assq process org-async--stack)
-    (let* ((proc-info (cdr (assq process org-async--stack)))
-           (buffer-val (plist-get proc-info :buffer))
-           (proc-buf (if (consp buffer-val) (cdr buffer-val) buffer-val))
-           (blocking-p (cl-member process org-async--blocking-tasks :key #'car)))
-      (setq org-async--stack
-            (delq (assq process org-async--stack) org-async--stack))
-      ;; Ensure that any filter is called on the final output
-      ;; prior to the callbacks.
-      (while (accept-process-output process))
-      (org-async--execute-callback
-       (plist-get
-        proc-info
-        (if (and (not failed)
-                 (= 0 (process-exit-status process)))
-            :success :failure))
-       (process-exit-status process)
-       proc-buf
-       (plist-get proc-info :info)
-       blocking-p)
-      (when blocking-p
-        (setq org-async--blocking-tasks
-              (cl-delete process org-async--blocking-tasks :key #'car)))
-      (when (and (consp buffer-val) (eq :temp (car buffer-val)))
-        (kill-buffer proc-buf)))
-    (when (and org-async--wait-queue
-               (< org-async-process-limit (length org-async--stack)))
-      (apply #'org-async-call (pop org-async--wait-queue)))))
+  "Drain PROCESS, remove it from the async stack, and run its callback.
+Run the success callback when PROCESS exited with zero status and
+FAILED is nil; otherwise run the failure callback."
+  (let ((entry (assq process org-async--stack)))
+    (when (and entry (not (plist-get (cdr entry) :cleaning-up)))
+      (let* ((proc-info (cdr entry))
+             (buffer-val (plist-get proc-info :buffer))
+             (proc-buf (if (consp buffer-val) (cdr buffer-val) buffer-val))
+             (blocking-p (cl-member process org-async--blocking-tasks :key #'car)))
+        ;; The filter needs this stack entry to handle the final output.
+        ;; Draining can reenter the sentinel or monitor, so mark the job
+        ;; until the drain has completed (or unwound after an error).
+        (setcdr entry (plist-put proc-info :cleaning-up t))
+        (unwind-protect
+            (while (accept-process-output process))
+          (setcdr entry (plist-put (cdr entry) :cleaning-up nil)))
+        (setq org-async--stack (delq entry org-async--stack))
+        (org-async--execute-callback
+         (plist-get
+          proc-info
+          (if (and (not failed)
+                   (= 0 (process-exit-status process)))
+              :success :failure))
+         (process-exit-status process)
+         proc-buf
+         (plist-get proc-info :info)
+         blocking-p)
+        (when blocking-p
+          (setq org-async--blocking-tasks
+                (cl-delete process org-async--blocking-tasks :key #'car)))
+        (when (and (consp buffer-val) (eq :temp (car buffer-val)))
+          (kill-buffer proc-buf)))
+      (when (and org-async--wait-queue
+                 (< org-async-process-limit (length org-async--stack)))
+        (apply #'org-async-call (pop org-async--wait-queue))))))
 
 (defun org-async--execute-callback (callback exit-code process-buffer info &optional blocking)
   "Run CALLBACK with EXIT-CODE, PROCESS-BUFFER, and INFO.
