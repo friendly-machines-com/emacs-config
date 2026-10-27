@@ -22,6 +22,7 @@
   (add-hook 'agent-shell-mode-hook #'mixed-pitch-mode)
   (easy-menu-define lc-agent-menu agent-shell-mode-map "Agent controls"
     '("Agent"
+      ["Set session model..." agent-shell-set-session-model t]
       ["Stop current turn/jobs" agent-shell-interrupt t]
       ["Kill exposed subprocess at point" lc-agent-kill-process
        (let ((process (get-text-property (point) 'agent-shell-process)))
@@ -46,7 +47,8 @@ The provider subsequently supplies its normal interactive entry point."
       (user-error "No exposed tool subprocess at point; use Stop turn or List processes"))
     (delete-process process)))
 (lc-register-actions
- '((agent-stop "Stop all" agent-shell-interrupt "cancel")
+ '((agent-model "Set session model" agent-shell-set-session-model "preferences")
+   (agent-stop "Stop all" agent-shell-interrupt "cancel")
    (agent-pending "Pending action" agent-shell-jump-to-latest-permission-button-row "jump-to")
    (agent-prev "Previous tool" agent-shell-ui-backward-block "up-arrow")
    (agent-next "Next tool" agent-shell-ui-forward-block "down-arrow")
