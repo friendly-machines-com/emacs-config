@@ -74,10 +74,12 @@ Walking the active keymaps and their menu-bar submenus avoids calling
                     (not (gethash command native)))
            (push command (gethash prefix groups)))))
      commands)
-    (dolist (prefix (sort (hash-table-keys groups) #'string-lessp))
+    ;; `define-key' prepends menu entries, so insert in reverse order.
+    (dolist (prefix (reverse (sort (hash-table-keys groups) #'string-lessp)))
       (let ((group (make-sparse-keymap prefix)))
-        (dolist (command (sort (gethash prefix groups)
-                              (lambda (a b) (string-lessp (symbol-name a) (symbol-name b)))))
+        (dolist (command (reverse
+                          (sort (gethash prefix groups)
+                                (lambda (a b) (string-lessp (symbol-name a) (symbol-name b))))))
           (let ((name (symbol-name command)))
             (define-key group (vector command)
               `(menu-item ,(capitalize (replace-regexp-in-string "-" " " name))
