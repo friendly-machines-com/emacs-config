@@ -48,6 +48,15 @@ Loki requires the loki-acp adapter for ACP integration."
   :type '(repeat string)
   :group 'agent-shell)
 
+(defcustom agent-shell-loki-default-model-id
+  nil
+  "Default Loki model ID.
+
+Must be one of the model ID's displayed under \"Available models\"
+when starting a new shell."
+  :type '(choice (const nil) string)
+  :group 'agent-shell)
+
 (defcustom agent-shell-loki-environment
   nil
   "Environment variables for the Loki client.
@@ -76,6 +85,7 @@ Returns an agent configuration alist using `agent-shell-make-agent-config'."
    :shell-prompt-regexp "Loki> "
    :icon-name "loki.png"
    :welcome-function #'agent-shell-loki--welcome-message
+   :default-model-id (lambda () agent-shell-loki-default-model-id)
    :client-maker (lambda (buffer)
                    (agent-shell-loki-make-client :buffer buffer))
    :install-instructions "See Loki installation.
